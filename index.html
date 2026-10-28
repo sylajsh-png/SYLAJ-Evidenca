@@ -18,7 +18,7 @@
                     <button onclick="prijava()">Prijava</button>
                       <p id="sporocilo"></p>
                       </div>
-                      
+
          <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
          <script>
@@ -29,6 +29,22 @@
                    SUPABASE_URL,
                        SUPABASE_KEY
                          );
+
+                         async function prijava() {
+                           const email = document.getElementById("email").value.trim();
+                             const password = document.getElementById("password").value;
+                               const porocilo = document.getElementById("sporocilo");
+
+                                 const { error } = await db.auth.signInWithPassword({
+                                     email: email,
+                                         password: password
+                                           });
+
+                                             porocilo.textContent = error
+                                                 ? "Prijava ni uspela: " + error.message
+                                                     : "Prijava uspešna!";
+                                                     }
+                                                     
                          </script>
 
         </body>

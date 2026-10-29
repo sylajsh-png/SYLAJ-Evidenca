@@ -43,7 +43,7 @@ const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',u
 role=String(profile?.vloga||'').trim().toLowerCase();
 if (!['admin','administrator','skrbnik','vodja'].includes(role)) throw new Error('Uporabnik nima dovoljenja za evidenco. Vloga: '+role);
 await loadWorkers();
-$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;
+$('who').textContent=(administrator()?'Administrator':'Vodja')+' - '+email;
 $('login').classList.add('hidden');$('app').classList.remove('hidden');
 msg('Prijava uspešna!');await refresh();
 }catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}

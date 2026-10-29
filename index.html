@@ -49,7 +49,17 @@
                          }
                          }
                                                      
-                         </script>
+                       async function odjava() {
+  const { error } = await db.auth.signOut();
+
+  if (error) {
+    alert("Odjava ni uspela: " + error.message);
+    return;
+  }
+
+  document.getElementById("orari").style.display = "none";
+  document.getElementById("sporocilo").textContent = "";
+                       }  </script>
 
   <div id="orari" style="display:none">
   <h2>Evidenca delovnih ur</h2>

@@ -52,7 +52,7 @@ async function loadWorkers(){
 const query=admin()?db.from('delavci').select('id,ime_priimek,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');
 const {data,error}=await query;if(error)throw error;workers=data||[];
 $('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');
-if (!['admin', 'administrator', 'skrbnik', 'vodja'].includes(role)) throw new Error('Uporabnik nima dovoljenja za evidenco. Vloga: ' + role);
+if (!['admin','administrator','skrbnik','vodja'].includes(role)) throw new Error('Uporabnik nima dovoljenja za evidenco. Vloga: '+role);
 if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage');
 }
 function workerId(){const id=$('worker').value;if(!workers.some(w=>String(w.id)===id))throw Error('Izberite delavca.');return id}

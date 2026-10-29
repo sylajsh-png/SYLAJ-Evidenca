@@ -26,7 +26,7 @@ const clock=(d=new Date())=>[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>
 const min=t=>{if(!t)return null;const a=String(t).split(':').map(Number);return a[0]*60+a[1]};
 const duration=e=>e.zacetek&&e.konec?Math.max(0,min(e.konec)-min(e.zacetek)):null;
 const fmt=n=>Math.floor(n/60)+' h '+String(n%60).padStart(2,'0')+' min';
-const administrator = () => ['admin','administrator','skrbnik'].includes(vloga);
+const administrator = () => ['admin','administrator','skrbnik'].includes(role);
 const total=arr=>arr.reduce((n,e)=>n+(duration(e)??0),0);
 function addOption(id,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;$(id).append(o)}
 function switchMode(){$('automatic').classList.toggle('hidden',$('mode').value!=='auto');$('manual').classList.toggle('hidden',$('mode').value!=='manual')}
@@ -41,7 +41,7 @@ const {data,error}=await db.auth.signInWithPassword({email,password});if(error)t
 user=data.user;
 const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;
 role=String(profile?.vloga||'').trim().toLowerCase();
-if (!['admin','administrator','skrbnik','vodja'].includes(vloga)) throw new Error('Uporabnik nima dovoljenja za evidenco. Vloga: '+vloga);
+if (!['admin','administrator','skrbnik','vodja'].includes(role)) throw new Error('Uporabnik nima dovoljenja za evidenco. Vloga: '+role);
 await loadWorkers();
 $('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;
 $('login').classList.add('hidden');$('app').classList.remove('hidden');

@@ -52,13 +52,13 @@ const {data,error}=await db.auth.signInWithPassword({email,password});if(error)t
 user=data.user;
 const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;
 role=profile.vloga;
-if(!['skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');
+if(!['administrator','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');
 $('login').classList.add('hidden');$('app').classList.remove('hidden');$('who').textContent=(role==='skrbnik'?'Administrator':'Vodja')+' – '+email;
 await loadWorkers();await refresh();message('Prijava uspešna!');
 }catch(e){message('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}
 }
 async function loadWorkers(){
-const query=role==='skrbnik'?db.from('delavci').select('id,ime_priimek,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');
+const query=role==='administrator'?db.from('delavci').select('id,ime_priimek,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');
 const {data,error}=await query;if(error)throw error;workers=data||[];
 $('worker').replaceChildren();$('filterWorker').replaceChildren();option('filterWorker','','Vsi dovoljeni delavci');
 workers.forEach(w=>{option('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));option('filterWorker',w.id,w.ime_priimek)});

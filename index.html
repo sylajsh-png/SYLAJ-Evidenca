@@ -43,7 +43,11 @@
                                              porocilo.textContent = error
                                                  ? "Prijava ni uspela: " + error.message
                                                      : "Prijava uspešna!";
-                                                     }
+    
+                         if (!error) {
+  document.getElementById("orari").style.display = "block";
+                         }
+                         }
                                                      
                          </script>
 

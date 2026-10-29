@@ -56,6 +56,9 @@ if (profili?.vloga === "admin") {
   document.getElementById("admin-panel").style.display = "block";
   await ngarkoPunetoret();
 }
+                         }if (profili?.vloga === "vodja") {
+  document.getElementById("vodja-panel").style.display = "block";
+  await ngarkoPunetoretEVodjes();
                          }
                          }
    async function ngarkoPunetoret() {
@@ -75,11 +78,37 @@ if (profili?.vloga === "admin") {
 
   data.forEach(d => {
     const p = document.createElement("p");
-    p.textContent =
-      d.ime_priimek + " – " + (d.ekipe?.naziv || "Brez ekipe");
+  p.textContent =
+  d.ime_priimek + " - " + (d.ekipe?.naziv || "Brez ekipe");
+lista.appendChild(p);
+});
+   }
+           async function ngarkoPunetoretEVodjes() {
+  const { data, error } = await db
+    .from("delavci")
+    .select("ime_priimek, ekipe!inner(naziv, vodja_id)")
+    .eq("ekipe.vodja_id", (await db.auth.getUser()).data.user.id)
+    .order("ime_priimek");
+
+  const lista = document.getElementById("seznam-moje-ekipe");
+
+  if (error) {
+    lista.textContent = "Napaka: " + error.message;
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  data.forEach(d => {
+    const p = document.createElement("p");
+    p.textContent = d.ime_priimek + " – " + d.ekipe.naziv;
     lista.appendChild(p);
   });
-   }                                                  
+   } 
+  
+  
+
+                                                
                        async function odjava() {
   const { error } = await db.auth.signOut();
 
@@ -103,6 +132,10 @@ if (profili?.vloga === "admin") {
   <h3>Ekipe in delavci</h3>
   <div id="seznam-delavcev"></div>
 </div>
+        <div id="vodja-panel" style="display:none">
+  <h2>Moja ekipa</h2>
+  <div id="seznam-moje-ekipe"></div>
+        </div>
 
       </body>
           </html>

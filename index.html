@@ -1,25 +1,18 @@
-<!doctype html>
-<html lang="sl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SYLAJ-Evidenca</title>
-<head><link rel="icon" type="image/png" href="SYLAJ-Evidenca-logo-4-1.png"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SYLAJ-Evidenca</title><link rel="icon" type="image/png" href="SYLAJ-Evidenca-logo-4-1.png"><link rel="apple-touch-icon" href="SYLAJ-Evidenca-logo-4-1.png">
-*{box-sizing:border-box}body{font:16px system-ui,Arial;background:#f3f6f9;color:#17212d;max-width:1100px;margin:auto;padding:16px}h1{color:#174d74}.card{background:white;border:1px solid #dce4ed;border-radius:12px;padding:18px;margin:14px 0}input,select,button{font:inherit;padding:10px;border:1px solid #bac9d6;border-radius:8px;max-width:100%}button{background:#17669a;color:white;border:0;cursor:pointer;margin:4px}button.alt{background:#566575}button:disabled{opacity:.5}label{display:flex;flex-direction:column;gap:5px;margin:6px}label span,small{color:#566575}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.hidden{display:none!important}.msg{white-space:pre-wrap;color:#8a3b12}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid #e2e7ee;padding:9px;text-align:left;white-space:nowrap}th{background:#eaf1f7}.stat{display:inline-block;margin:8px 16px 8px 0;font-weight:700}
+<!doctype html><html lang="sl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SYLAJ-Evidenca</title><link rel="icon" href="SYLAJ-Evidenca-logo-4-1.png"><link rel="apple-touch-icon" href="SYLAJ-Evidenca-logo-4-1.png"><style>
+*{box-sizing:border-box}body{font:16px system-ui,Arial;background:#f3f6f9;color:#17212d;max-width:1100px;margin:auto;padding:16px}.card{background:white;border:1px solid #dce4ed;border-radius:12px;padding:18px;margin:14px 0}input,select,button{font:inherit;padding:10px;border:1px solid #bac9d6;border-radius:8px;max-width:100%}button{background:#17669a;color:white;border:0;cursor:pointer;margin:4px}button.alt{background:#566575}button.active{background:#124367}button:disabled{opacity:.5}label{display:flex;flex-direction:column;gap:5px;margin:6px}label span,small{color:#566575}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.hidden{display:none!important}.msg{white-space:pre-wrap;color:#8a3b12}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid #e2e7ee;padding:9px;text-align:left;white-space:nowrap}th{background:#eaf1f7}.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:5px}.months button{margin:0}
 </style></head><body>
 <h1><img src="SYLAJ-Evidenca-logo-4-1.png" alt="SYLAJ-Evidenca" style="width:180px;max-width:100%;height:auto"></h1>
-<section class="card" id="login"><h2>Prijava</h2><div class="row"><label><span>E-pošta</span><input id="email" type="email" autocomplete="username"></label><label><span>Geslo</span><input id="password" type="password" autocomplete="current-password"></label><button id="loginBtn">Prijava</button></div></section>
-<p id="message" class="msg" role="status"></p>
-<div id="app" class="hidden">
-<section class="card"><div class="row"><strong id="who"></strong><button id="logout" class="alt">Odjava</button></div><p><small>Začetek in konec dela po lokalnem času. Odmor se ne odšteva.</small></p></section>
-<section class="card"><h2>Vnos delovnih ur</h2><div class="row"><label><span>Delavec</span><select id="worker"></select></label><label><span>Način</span><select id="mode"><option value="auto">Samodejno</option><option value="manual">Ročno</option></select></label></div>
-<div id="automatic"><button id="start">Začetek dela</button><button id="end">Konec dela</button></div>
-<div id="manual" class="hidden"><div class="row"><label><span>Datum</span><input id="workDate" type="date"></label><label><span>Začetek</span><input id="startTime" type="time" value="07:00"></label><label><span>Konec</span><input id="endTime" type="time" value="15:00"></label><label><span>Opomba</span><input id="note" placeholder="Neobvezno"></label></div><button id="saveManual">Shrani ročno</button></div><p id="entryMessage" class="msg"></p></section>
-<section class="card"><h2>Pregled ur</h2><div class="row"><label><span>Mesec</span><input type="month" id="month"></label><label><span>Leto</span><input type="number" id="year" min="2020" max="2100"></label><label><span>Delavec</span><select id="filterWorker"></select></label><button id="refresh">Osveži</button><button id="export" class="alt">Izvoz za Excel (CSV)</button></div>
-<div id="totals"></div><div class="scroll"><table><thead><tr><th>Datum</th><th>Delavec</th><th>Začetek</th><th>Konec</th><th>Ure</th><th>Opomba</th><th>Uredi</th></tr></thead><tbody id="rows"></tbody></table></div><small>Izvoz vsebuje dnevne vnose ter mesečne in letne vsote. Odprti vnosi nimajo izračunanih ur.</small></section></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>
+<section class="card" id="login"><h2>Prijava</h2><div class="row"><label><span>E-pošta</span><input id="email" type="email" autocomplete="username"></label><label><span>Geslo</span><input id="password" type="password" autocomplete="current-password"></label><button id="loginBtn">Prijava</button></div></section><p id="message" class="msg" role="status"></p>
+<div id="app" class="hidden"><section class="card"><div class="row"><strong id="who"></strong><button id="logout" class="alt">Odjava</button></div><div class="row"><button id="hoursTab" class="active">Delovne ure</button><button id="toolsTab">Orodja</button></div><small>Odmor se ne odšteva.</small></section>
+<div id="hoursView"><section class="card"><h2>Vnos delovnih ur</h2><div class="row"><label><span>Delavec</span><select id="worker"></select></label><label><span>Način</span><select id="mode"><option value="auto">Samodejno</option><option value="manual">Ročno</option></select></label></div><div id="automatic"><button id="start">Začetek dela</button><button id="end">Konec dela</button></div><div id="manual" class="hidden"><div class="row"><label><span>Datum</span><input id="workDate" type="date"></label><label><span>Začetek</span><input id="startTime" type="time" value="07:00"></label><label><span>Konec</span><input id="endTime" type="time" value="15:00"></label><label><span>Opomba</span><input id="note"></label></div><button id="saveManual">Shrani ročno</button></div><p id="entryMessage" class="msg"></p></section>
+<section class="card"><h2>Pregled ur</h2><div class="row"><label><span>Leto</span><input type="number" id="year" min="2020" max="2100"></label><label><span>Delavec</span><select id="filterWorker"></select></label><button id="refresh">Osveži</button><button id="export" class="alt">Izvoz za Excel (CSV)</button></div><div id="months" class="months"></div><h3 id="monthTitle"></h3><div id="totals"></div><div class="scroll"><table><thead><tr><th>Datum</th><th>Delavec</th><th>Začetek</th><th>Konec</th><th>Ure</th><th>Opomba</th><th>Uredi</th></tr></thead><tbody id="rows"></tbody></table></div><small>Podatki prejšnjih let ostanejo shranjeni v bazi.</small></section></div>
+<div id="toolsView" class="hidden"><section class="card"><h2>Prevzem orodja</h2><div class="row"><label><span>Ekipa</span><select id="toolTeam"></select></label><label><span>Delavec</span><select id="toolWorker"></select></label><label><span>Orodje</span><input id="toolName" placeholder="Npr. žaba"></label><label><span>Količina</span><input id="toolQty" type="number" min="1" step="1" value="1"></label><label><span>Stanje ob prevzemu</span><select id="toolCondition"><option>V redu</option><option>Poškodovano</option></select></label><label><span>Opomba</span><input id="toolNote"></label></div><button id="takeTool">Shrani prevzem</button><p id="toolMessage" class="msg"></p></section><section class="card"><h2>Pregled orodja</h2><button id="refreshTools">Osveži</button><div class="scroll"><table><thead><tr><th>Orodje</th><th>Količina</th><th>Ekipa</th><th>Delavec</th><th>Prevzeto</th><th>Stanje ob prevzemu</th><th>Vrnjeno</th><th>Stanje ob vrnitvi</th><th>Opomba</th><th>Potrditev</th></tr></thead><tbody id="toolRows"></tbody></table></div></section></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script>
 'use strict';
 const SUPABASE_URL='https://zofclcgkgwfsjrcewfml.supabase.co';
 const KEY='sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ';
 const $=id=>document.getElementById(id);
-let db=null,user=null,role='',workers=[],monthEntries=[],yearEntries=[];
+let db=null,user=null,role='',workers=[],teams=[],monthEntries=[],yearEntries=[],toolEntries=[],selectedMonth=new Date().getMonth()+1;
 const msg=(s,id='message')=>$(id).textContent=s;
 const date=(d=new Date())=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 const clock=(d=new Date())=>[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
@@ -30,100 +23,29 @@ const admin=()=>['admin','administrator','skrbnik'].includes(role);
 const total=arr=>arr.reduce((n,e)=>n+(duration(e)??0),0);
 function addOption(id,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;$(id).append(o)}
 function switchMode(){$('automatic').classList.toggle('hidden',$('mode').value!=='auto');$('manual').classList.toggle('hidden',$('mode').value!=='manual')}
+function showTab(which){$('hoursView').classList.toggle('hidden',which!=='hours');$('toolsView').classList.toggle('hidden',which!=='tools');$('hoursTab').classList.toggle('active',which==='hours');$('toolsTab').classList.toggle('active',which==='tools');if(which==='tools')refreshTools()}
 try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=window.supabase.createClient(SUPABASE_URL,KEY)}catch(e){msg('Napaka: '+e.message)}
-async function prijava(){
-if(!db)return msg('Supabase ni povezan.');
-const email=$('email').value.trim(),password=$('password').value;
-if(!email||!password)return msg('Vnesite e-pošto in geslo.');
-$('loginBtn').disabled=true;msg('Prijavljanje ...');
-try{
-const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;
-user=data.user;
-const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;
-role=String(profile?.vloga||'').trim().toLowerCase();
-if(!['admin','administrator','skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco. Vloga: '+(role||'manjka'));
-await loadWorkers();
-$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;
-$('login').classList.add('hidden');$('app').classList.remove('hidden');
-msg('Prijava uspešna!');await refresh();
-}catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}
-}
-async function loadWorkers(){
-const query=admin()?db.from('delavci').select('id,ime_priimek,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');
-const {data,error}=await query;if(error)throw error;workers=data||[];
-$('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');
-workers.forEach(w=>{addOption('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));addOption('filterWorker',w.id,w.ime_priimek)});
-if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage');
-}
+async function prijava(){if(!db)return msg('Supabase ni povezan.');const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return msg('Vnesite e-pošto in geslo.');$('loginBtn').disabled=true;msg('Prijavljanje ...');try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;user=data.user;const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;role=String(profile?.vloga||'').trim().toLowerCase();if(!['admin','administrator','skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');await loadWorkers();$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;$('login').classList.add('hidden');$('app').classList.remove('hidden');msg('Prijava uspešna!');await refresh();try{await loadTeams()}catch(e){msg('Napaka pri ekipah: '+e.message,'toolMessage')}}catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}}
+async function loadWorkers(){const query=admin()?db.from('delavci').select('id,ime_priimek,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');const {data,error}=await query;if(error)throw error;workers=data||[];$('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');workers.forEach(w=>{addOption('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));addOption('filterWorker',w.id,w.ime_priimek)});if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage')}
 function workerId(){const id=$('worker').value;if(!workers.some(w=>String(w.id)===id))throw Error('Izberite delavca.');return id}
 async function insertEntry(payload){const {error}=await db.from('delovne_ure').insert({...payload,vnesel_id:user.id});if(error)throw error}
-async function startWork(){
-try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');
-const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum);if(error)throw error;
-if((data||[]).some(e=>e.zacetek&&!e.konec))throw Error('Delo je za danes že začeto.');
-await insertEntry({delavec_id:id,datum,zacetek:clock(now),konec:null});msg('Začetek dela shranjen.','entryMessage');await refresh();
-}catch(e){msg('Napaka: '+e.message,'entryMessage')}
-}
-async function endWork(){
-try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');
-const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum).order('id',{ascending:false});if(error)throw error;
-const open=(data||[]).find(e=>e.zacetek&&!e.konec);if(!open)throw Error('Za danes ni odprtega začetka dela.');
-const {error:ue}=await db.from('delovne_ure').update({konec:clock(now)}).eq('id',open.id);if(ue)throw ue;
-msg('Konec dela shranjen.','entryMessage');await refresh();
-}catch(e){msg('Napaka: '+e.message,'entryMessage')}
-}
-async function saveManual(){
-try{const id=workerId(),datum=$('workDate').value,zacetek=$('startTime').value,konec=$('endTime').value,opomba=$('note').value.trim();
-if(!datum||!zacetek||!konec)throw Error('Vnesite datum, začetek in konec.');
-if(min(konec)<=min(zacetek))throw Error('Konec mora biti po začetku. Nočno delo zahteva posebno obravnavo.');
-await insertEntry({delavec_id:id,datum,zacetek,konec,opomba:opomba||null});msg('Ročni vnos shranjen.','entryMessage');await refresh();
-}catch(e){msg('Napaka: '+e.message,'entryMessage')}
-}
-async function fetchPeriod(from,to){
-let out=[],offset=0;
-while(true){const {data,error}=await db.from('delovne_ure').select('id,delavec_id,datum,zacetek,konec,opomba').gte('datum',from).lt('datum',to).order('datum',{ascending:true}).range(offset,offset+999);
-if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000}
-return out.filter(e=>workers.some(w=>String(w.id)===String(e.delavec_id)));
-}
-async function refresh(){
-if(!user)return;
-try{const m=$('month').value,y=Number($('year').value);
-if(!/^\d{4}-\d{2}$/.test(m)||!Number.isInteger(y)||y<2020||y>2100)throw Error('Preverite mesec in leto.');
-const [yy,mm]=m.split('-').map(Number),next=mm===12?`${yy+1}-01`:`${yy}-${String(mm+1).padStart(2,'0')}`;
-[monthEntries,yearEntries]=await Promise.all([fetchPeriod(m+'-01',next+'-01'),fetchPeriod(y+'-01-01',(y+1)+'-01-01')]);
-render();
-}catch(e){msg('Napaka pri branju ur: '+e.message,'entryMessage')}
-}
+async function startWork(){try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum);if(error)throw error;if((data||[]).some(e=>e.zacetek&&!e.konec))throw Error('Delo je za danes že začeto.');await insertEntry({delavec_id:id,datum,zacetek:clock(now),konec:null});msg('Začetek dela shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
+async function endWork(){try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum).order('id',{ascending:false});if(error)throw error;const open=(data||[]).find(e=>e.zacetek&&!e.konec);if(!open)throw Error('Za danes ni odprtega začetka dela.');const {error:ue}=await db.from('delovne_ure').update({konec:clock(now)}).eq('id',open.id);if(ue)throw ue;msg('Konec dela shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
+async function saveManual(){try{const id=workerId(),datum=$('workDate').value,zacetek=$('startTime').value,konec=$('endTime').value,opomba=$('note').value.trim();if(!datum||!zacetek||!konec)throw Error('Vnesite datum, začetek in konec.');if(min(konec)<=min(zacetek))throw Error('Konec mora biti po začetku.');await insertEntry({delavec_id:id,datum,zacetek,konec,opomba:opomba||null});msg('Ročni vnos shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
+async function fetchPeriod(from,to){let out=[],offset=0;while(true){const {data,error}=await db.from('delovne_ure').select('id,delavec_id,datum,zacetek,konec,opomba').gte('datum',from).lt('datum',to).order('datum',{ascending:true}).range(offset,offset+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000}return out.filter(e=>workers.some(w=>String(w.id)===String(e.delavec_id)))}
+async function refresh(){if(!user)return;try{const y=Number($('year').value);if(!Number.isInteger(y)||y<2020||y>2100)throw Error('Preverite leto.');yearEntries=await fetchPeriod(y+'-01-01',(y+1)+'-01-01');monthEntries=yearEntries.filter(e=>Number(e.datum.slice(5,7))===selectedMonth);render()}catch(e){msg('Napaka pri branju ur: '+e.message,'entryMessage')}}
 const selected=arr=>$('filterWorker').value?arr.filter(e=>String(e.delavec_id)===$('filterWorker').value):arr;
-function render(){
-const rows=selected(monthEntries),annual=selected(yearEntries);
-$('totals').textContent='Mesec: '+fmt(total(rows))+'    Leto: '+fmt(total(annual));
-const body=$('rows');body.replaceChildren();const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));
-for(const e of rows){const tr=document.createElement('tr');
-for(const v of [e.datum,names.get(String(e.delavec_id))||e.delavec_id,String(e.zacetek||'').slice(0,5),String(e.konec||'').slice(0,5),duration(e)===null?'—':fmt(duration(e)),e.opomba||'']){const td=document.createElement('td');td.textContent=v;tr.append(td)}
-const td=document.createElement('td');if(admin()){const b=document.createElement('button');b.className='alt';b.textContent='Popravi';b.onclick=()=>editEntry(e.id);td.append(b)}tr.append(td);body.append(tr)}
-if(!rows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=7;td.textContent='Ni vnosov za izbrani mesec.';tr.append(td);body.append(tr)}
-}
-async function editEntry(id){
-if(!admin())return;const e=monthEntries.find(r=>String(r.id)===String(id));if(!e)return;
-const a=prompt('Začetek (HH:MM)',String(e.zacetek||'').slice(0,5));if(a===null)return;
-const b=prompt('Konec (HH:MM)',String(e.konec||'').slice(0,5));if(b===null)return;
-if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(a)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(b)||min(b)<=min(a))return alert('Neveljavne ure.');
-try{const {error}=await db.from('delovne_ure').update({zacetek:a+':00',konec:b+':00'}).eq('id',id);if(error)throw error;await refresh()}catch(err){alert('Napaka: '+err.message)}
-}
-function exportCSV(){
-const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek])),arr=selected(yearEntries),monthly=new Map(),yearly=new Map();
-const data=[['Vrsta','Datum / mesec','Delavec','Začetek','Konec','Minute','Opomba']];
-for(const e of arr){const name=names.get(String(e.delavec_id))||'',d=duration(e);data.push(['Dnevno',e.datum,name,e.zacetek||'',e.konec||'',d??'',e.opomba||'']);if(d!==null){const k=name+'|'+e.datum.slice(0,7);monthly.set(k,(monthly.get(k)||0)+d);yearly.set(name,(yearly.get(name)||0)+d)}}
-for(const [key,n] of monthly){const i=key.lastIndexOf('|');data.push(['Mesečno',key.slice(i+1),key.slice(0,i),'','',n,''])}
-for(const [name,n] of yearly)data.push(['Letno',$('year').value,name,'','',n,'']);
-const csv='\ufeff'+data.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
-const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
-a.href=url;a.download='SYLAJ-Evidenca-'+$('year').value+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
-}
-async function odjava(){
-try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];monthEntries=[];yearEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';msg('Odjava uspešna.')}catch(e){msg('Napaka: '+e.message)}
-}
-$('loginBtn').onclick=prijava;$('logout').onclick=odjava;$('start').onclick=startWork;$('end').onclick=endWork;$('saveManual').onclick=saveManual;$('refresh').onclick=refresh;$('export').onclick=exportCSV;$('mode').onchange=switchMode;$('month').onchange=refresh;$('year').onchange=refresh;$('filterWorker').onchange=render;
-$('workDate').value=date();$('month').value=date().slice(0,7);$('year').value=new Date().getFullYear();
+function render(){const rows=selected(monthEntries),annual=selected(yearEntries);$('totals').textContent='Mesec: '+fmt(total(rows))+'    Leto: '+fmt(total(annual));const body=$('rows');body.replaceChildren();const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));for(const e of rows){const tr=document.createElement('tr');for(const v of [e.datum,names.get(String(e.delavec_id))||e.delavec_id,String(e.zacetek||'').slice(0,5),String(e.konec||'').slice(0,5),duration(e)===null?'—':fmt(duration(e)),e.opomba||'']){const td=document.createElement('td');td.textContent=v;tr.append(td)}const td=document.createElement('td');if(admin()){const b=document.createElement('button');b.className='alt';b.textContent='Popravi';b.onclick=()=>editEntry(e.id);td.append(b)}tr.append(td);body.append(tr)}if(!rows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=7;td.textContent='Ni vnosov za izbrani mesec.';tr.append(td);body.append(tr)}const namesMonths=['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];$('monthTitle').textContent=namesMonths[selectedMonth-1]+' '+$('year').value;[...$('months').children].forEach((b,i)=>b.classList.toggle('active',i+1===selectedMonth))}
+async function editEntry(id){if(!admin())return;const e=monthEntries.find(r=>String(r.id)===String(id));if(!e)return;const a=prompt('Začetek (HH:MM)',String(e.zacetek||'').slice(0,5));if(a===null)return;const b=prompt('Konec (HH:MM)',String(e.konec||'').slice(0,5));if(b===null)return;if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(a)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(b)||min(b)<=min(a))return alert('Neveljavne ure.');try{const {error}=await db.from('delovne_ure').update({zacetek:a+':00',konec:b+':00'}).eq('id',id);if(error)throw error;await refresh()}catch(err){alert('Napaka: '+err.message)}}
+function exportCSV(){const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek])),arr=selected(yearEntries).filter(e=>Number(e.datum.slice(5,7))===selectedMonth),monthly=new Map(),yearly=new Map();const data=[['Vrsta','Datum / mesec','Delavec','Začetek','Konec','Minute','Opomba']];for(const e of arr){const name=names.get(String(e.delavec_id))||'',d=duration(e);data.push(['Dnevno',e.datum,name,e.zacetek||'',e.konec||'',d??'',e.opomba||'']);if(d!==null){const k=name+'|'+e.datum.slice(0,7);monthly.set(k,(monthly.get(k)||0)+d)}}for(const e of selected(yearEntries)){const d=duration(e);if(d!==null){const name=names.get(String(e.delavec_id))||'';yearly.set(name,(yearly.get(name)||0)+d)}}for(const [key,n] of monthly){const i=key.lastIndexOf('|');data.push(['Mesečno',key.slice(i+1),key.slice(0,i),'','',n,''])}for(const [name,n] of yearly)data.push(['Letno',$('year').value,name,'','',n,'']);const csv='\ufeff'+data.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='SYLAJ-Evidenca-'+$('year').value+'-'+String(selectedMonth).padStart(2,'0')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+async function loadTeams(){const q=admin()?db.from('ekipe').select('id,naziv,vodja_id').order('naziv'):db.from('ekipe').select('id,naziv,vodja_id').eq('vodja_id',user.id).order('naziv');const {data,error}=await q;if(error)throw error;teams=data||[];$('toolTeam').replaceChildren();teams.forEach(t=>addOption('toolTeam',t.id,t.naziv));await loadToolWorkers()}
+async function loadToolWorkers(){$('toolWorker').replaceChildren();const team=teams.find(t=>String(t.id)===$('toolTeam').value);if(!team)return;const {data,error}=await db.from('delavci').select('id,ime_priimek').eq('ekipa_id',team.id).order('ime_priimek');if(error){msg('Napaka: '+error.message,'toolMessage');return}(data||[]).forEach(w=>addOption('toolWorker',w.id,w.ime_priimek))}
+async function takeTool(){try{const name=$('toolName').value.trim(),qty=Number($('toolQty').value),team=teams.find(t=>String(t.id)===$('toolTeam').value),worker=$('toolWorker').value;if(!name||!Number.isInteger(qty)||qty<1||!team||!worker)throw Error('Izpolnite orodje, količino, ekipo in delavca.');$('takeTool').disabled=true;const {error}=await db.from('evidenca_orodja').insert({naziv_orodja:name,kolicina:qty,ekipa_id:team.id,delavec_id:Number(worker),prevzel_uid:user.id,stanje_ob_prevzemu:$('toolCondition').value,opombe:$('toolNote').value.trim()||null});if(error)throw error;$('toolName').value='';$('toolNote').value='';msg('Prevzem shranjen.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}finally{$('takeTool').disabled=false}}
+async function refreshTools(){if(!user)return;try{let q=db.from('evidenca_orodja').select('id,naziv_orodja,kolicina,ekipa_id,delavec_id,datum_prevzema,datum_vracila,vracilo_potrjeno,stanje_ob_prevzemu,stanje_ob_vracilu,opombe').order('datum_prevzema',{ascending:false}).limit(1000);if(!admin()){if(!teams.length){toolEntries=[];renderTools();return}q=q.in('ekipa_id',teams.map(t=>t.id))}const {data,error}=await q;if(error)throw error;toolEntries=data||[];renderTools()}catch(e){msg('Napaka pri branju orodja: '+e.message,'toolMessage')}}
+function renderTools(){const body=$('toolRows');body.replaceChildren();const tn=new Map(teams.map(t=>[String(t.id),t.naziv]));const wn=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));for(const e of toolEntries){const tr=document.createElement('tr');for(const v of [e.naziv_orodja,e.kolicina,tn.get(String(e.ekipa_id))||e.ekipa_id,wn.get(String(e.delavec_id))||e.delavec_id,e.datum_prevzema?new Date(e.datum_prevzema).toLocaleString('sl-SI'):'',e.stanje_ob_prevzemu||'',e.datum_vracila?new Date(e.datum_vracila).toLocaleString('sl-SI'):'—',e.stanje_ob_vracilu||'—',e.opombe||'']){const td=document.createElement('td');td.textContent=v;tr.append(td)}const td=document.createElement('td');if(e.vracilo_potrjeno)td.textContent='Potrjeno';else if(admin()){const b=document.createElement('button');b.textContent='Potrdi vračilo';b.onclick=()=>confirmToolReturn(e.id);td.append(b)}else td.textContent='Čaka na administratorja';tr.append(td);body.append(tr)}if(!toolEntries.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=10;td.textContent='Ni evidentiranega orodja.';tr.append(td);body.append(tr)}}
+async function confirmToolReturn(id){if(!admin())return;const e=toolEntries.find(x=>String(x.id)===String(id));if(!e||e.vracilo_potrjeno)return;const answer=prompt('Stanje ob vrnitvi: V redu ali Poškodovano','V redu');if(answer===null)return;const c=answer.trim().toLowerCase();if(!['v redu','poškodovano','poskodovano'].includes(c))return alert('Vnesite V redu ali Poškodovano.');if(!confirm('Potrdite vračilo: '+e.naziv_orodja+'?'))return;try{const now=new Date().toISOString();const {data,error}=await db.from('evidenca_orodja').update({datum_vracila:now,vracilo_potrjeno:true,potrjeno_uid:user.id,datum_potrditve:now,stanje_ob_vracilu:c==='v redu'?'V redu':'Poškodovano'}).eq('id',id).eq('vracilo_potrjeno',false).select('id');if(error)throw error;if(!data?.length)throw Error('Vračilo ni bilo posodobljeno.');msg('Vračilo potrjeno.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}}
+async function odjava(){try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];teams=[];monthEntries=[];yearEntries=[];toolEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';msg('Odjava uspešna.')}catch(e){msg('Napaka: '+e.message)}}
+$('loginBtn').onclick=prijava;$('logout').onclick=odjava;$('start').onclick=startWork;$('end').onclick=endWork;$('saveManual').onclick=saveManual;$('refresh').onclick=refresh;$('export').onclick=exportCSV;$('mode').onchange=switchMode;$('year').onchange=refresh;$('filterWorker').onchange=render;$('hoursTab').onclick=()=>showTab('hours');$('toolsTab').onclick=()=>showTab('tools');$('toolTeam').onchange=loadToolWorkers;$('takeTool').onclick=takeTool;$('refreshTools').onclick=refreshTools;
+['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].forEach((name,i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>{selectedMonth=i+1;monthEntries=yearEntries.filter(e=>Number(e.datum.slice(5,7))===selectedMonth);render()};$('months').append(b)});
+$('workDate').value=date();$('year').value=new Date().getFullYear();
 </script></body></html>

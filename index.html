@@ -1,141 +1,196 @@
-
 <!DOCTYPE html>
 <html lang="sq">
 <head>
   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>SYLAJ-Evidenca</title>
-      </head>
-      <body>
-        <h1>SYLAJ-Evidenca</h1>
-          <p>
-            Mirë se vini në aplikacionin SYLAJ!</p>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SYLAJ-Evidenca</title>
+</head>
+<body>
+  <h1>SYLAJ-Evidenca</h1>
+  <p>Mirë se vini në aplikacionin SYLAJ!</p>
 
-            <div>
-              <h2>Prijava – SYLAJ</h2>
-                <input type="email" id="email" placeholder="E-pošta">
-                  <input type="password" id="password" placeholder="Geslo">
-                    <button onclick="prijava()">Prijava</button>
-                      <p id="sporocilo"></p>
-                      </div>
-
-         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
-         <script>
-           const SUPABASE_URL = "https://zofclcgkgwfsjrcewfml.supabase.co";
-             const SUPABASE_KEY = "sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ";
-
-               const db = window.supabase.createClient(
-                   SUPABASE_URL,
-                       SUPABASE_KEY
-                         );
-
-                         async function prijava() {
-                           const email = document.getElementById("email").value.trim();
-                             const password = document.getElementById("password").value;
-                               const porocilo = document.getElementById("sporocilo");
-
-                                 const { error } = await db.auth.signInWithPassword({
-                                     email: email,
-                                         password: password
-                                           });
-
-                                             porocilo.textContent = error
-                                                 ? "Prijava ni uspela: " + error.message
-                                                     : "Prijava uspešna!";
-    
-                         if (!error) {
-  document.getElementById("orari").style.display = "block";
-const { data: profili } = await db
-  .from("profili")
-  .select("vloga")
-  .eq("id", (await db.auth.getUser()).data.user.id)
-  .single();
-
-if (profili?.vloga === "skrbnik") {
-  document.getElementById("admin-panel").style.display = "block";
-  await ngarkoPunetoret();
-}
-                         if (profili?.vloga === "vodja") {
-  document.getElementById("vodja-panel").style.display = "block";
-  await ngarkoPunetoretEVodjes();
-                         }
-                         }
-   async function ngarkoPunetoret() {
-  const { data, error } = await db
-    .from("delavci")
-    .select("ime_priimek, ekipe(naziv)")
-    .order("ime_priimek");
-
-  const lista = document.getElementById("seznam-delavcev");
-
-  if (error) {
-    lista.textContent = "Napaka: " + error.message;
-    return;
-  }
-
-  lista.innerHTML = "";
-
-  data.forEach(d => {
-    const p = document.createElement("p");
-  p.textContent =
-  d.ime_priimek + " - " + (d.ekipe?.naziv || "Brez ekipe");
-lista.appendChild(p);
-});
-   }
-           async function ngarkoPunetoretEVodjes() {
-  const { data, error } = await db
-    .from("delavci")
-    .select("ime_priimek, ekipe!inner(naziv, vodja_id)")
-    .eq("ekipe.vodja_id", (await db.auth.getUser()).data.user.id)
-    .order("ime_priimek");
-
-  const lista = document.getElementById("seznam-moje-ekipe");
-
-  if (error) {
-    lista.textContent = "Napaka: " + error.message;
-    return;
-  }
-
-  lista.innerHTML = "";
-
-  data.forEach(d => {
-    const p = document.createElement("p");
-    p.textContent = d.ime_priimek + " – " + d.ekipe.naziv;
-    lista.appendChild(p);
-  });
-   } 
-  
-  
-
-                                                
-                       async function odjava() {
-  const { error } = await db.auth.signOut();
-
-  if (error) {
-    alert("Odjava ni uspela: " + error.message);
-    return;
-  }
-
-  document.getElementById("orari").style.display = "none";
-  document.getElementById("sporocilo").textContent = "";
-                       }  </script>
+  <div id="login-panel">
+    <h2>Prijava – SYLAJ</h2>
+    <input type="email" id="email" placeholder="E-pošta">
+    <input type="password" id="password" placeholder="Geslo">
+    <button type="button" onclick="prijava()">Prijava</button>
+    <p id="sporocilo"></p>
+  </div>
 
   <div id="orari" style="display:none">
-  <h2>Evidenca delovnih ur</h2>
-  <p>Dobrodošli v SYLAJ-Evidenca!</p>
-  <button onclick="odjava()">Odjava</button>
+    <h2>Evidenca delovnih ur</h2>
+    <p>Dobrodošli v SYLAJ-Evidenca!</p>
+    <button type="button" onclick="odjava()">Odjava</button>
   </div>
-        
-<div id="admin-panel" style="display:none">
-  <h2>Administracija SYLAJ</h2>
-  <h3>Ekipe in delavci</h3>
-  <div id="seznam-delavcev"></div>
-</div>
-        <div id="vodja-panel" style="display:none">
-  <h2>Moja ekipa</h2>
-  <div id="seznam-moje-ekipe"></div>
-        </div>
 
-      </body>
-          </html>
+  <div id="admin-panel" style="display:none">
+    <h2>Administracija SYLAJ</h2>
+    <h3>Ekipe in delavci</h3>
+    <div id="seznam-delavcev"></div>
+  </div>
+
+  <div id="vodja-panel" style="display:none">
+    <h2>Moja ekipa</h2>
+    <div id="seznam-moje-ekipe"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+  <script>
+    const SUPABASE_URL = "https://zofclcgkgwfsjrcewfml.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ";
+
+    let db;
+
+    try {
+      if (!window.supabase) {
+        throw new Error("Supabase se ni naložil.");
+      }
+      db = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+    } catch (err) {
+      document.getElementById("sporocilo").textContent =
+        "Napaka: " + err.message;
+    }
+
+    async function prijava() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const porocilo = document.getElementById("sporocilo");
+
+      if (!db) {
+        porocilo.textContent = "Napaka: Supabase ni povezan.";
+        return;
+      }
+
+      if (!email || !password) {
+        porocilo.textContent = "Vnesite e-pošto in geslo.";
+        return;
+      }
+
+      porocilo.textContent = "Prijavljanje ...";
+
+      try {
+        const { data: prijavaData, error } =
+          await db.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+
+        if (error) {
+          porocilo.textContent =
+            "Prijava ni uspela: " + error.message;
+          return;
+        }
+
+        porocilo.textContent = "Prijava uspešna!";
+
+        document.getElementById("orari").style.display = "block";
+        document.getElementById("admin-panel").style.display = "none";
+        document.getElementById("vodja-panel").style.display = "none";
+
+        const { data: profil, error: profilError } = await db
+          .from("profili")
+          .select("vloga")
+          .eq("id", prijavaData.user.id)
+          .single();
+
+        if (profilError) {
+          porocilo.textContent =
+            "Prijava uspešna, napaka profila: " +
+            profilError.message;
+          return;
+        }
+
+        if (profil?.vloga === "skrbnik") {
+          document.getElementById("admin-panel").style.display = "block";
+          await ngarkoPunetoret();
+        } else if (profil?.vloga === "vodja") {
+          document.getElementById("vodja-panel").style.display = "block";
+          await ngarkoPunetoretEVodjes();
+        } else {
+          porocilo.textContent =
+            "Prijava uspešna, neznana vloga: " +
+            (profil?.vloga || "brez vloge");
+        }
+      } catch (err) {
+        porocilo.textContent = "Napaka: " + err.message;
+      }
+    }
+
+    async function ngarkoPunetoret() {
+      const lista = document.getElementById("seznam-delavcev");
+
+      const { data, error } = await db
+        .from("delavci")
+        .select("ime_priimek, ekipe(naziv)")
+        .order("ime_priimek");
+
+      if (error) {
+        lista.textContent = "Napaka: " + error.message;
+        return;
+      }
+
+      lista.innerHTML = "";
+
+      (data || []).forEach(d => {
+        const p = document.createElement("p");
+        p.textContent =
+          d.ime_priimek + " - " +
+          (d.ekipe?.naziv || "Brez ekipe");
+        lista.appendChild(p);
+      });
+    }
+
+    async function ngarkoPunetoretEVodjes() {
+      const lista = document.getElementById("seznam-moje-ekipe");
+      const { data: userData, error: userError } =
+        await db.auth.getUser();
+
+      if (userError || !userData.user) {
+        lista.textContent = "Napaka pri preverjanju uporabnika.";
+        return;
+      }
+
+      const { data, error } = await db
+        .from("delavci")
+        .select("ime_priimek, ekipe!inner(naziv, vodja_id)")
+        .eq("ekipe.vodja_id", userData.user.id)
+        .order("ime_priimek");
+
+      if (error) {
+        lista.textContent = "Napaka: " + error.message;
+        return;
+      }
+
+      lista.innerHTML = "";
+
+      (data || []).forEach(d => {
+        const p = document.createElement("p");
+        p.textContent =
+          d.ime_priimek + " - " + d.ekipe.naziv;
+        lista.appendChild(p);
+      });
+    }
+
+    async function odjava() {
+      if (!db) return;
+
+      const { error } = await db.auth.signOut();
+
+      if (error) {
+        alert("Odjava ni uspela: " + error.message);
+        return;
+      }
+
+      document.getElementById("orari").style.display = "none";
+      document.getElementById("admin-panel").style.display = "none";
+      document.getElementById("vodja-panel").style.display = "none";
+      document.getElementById("sporocilo").textContent = "";
+      document.getElementById("password").value = "";
+    }
+  </script>
+</body>
+</html>

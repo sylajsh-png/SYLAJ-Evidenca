@@ -52,7 +52,7 @@ const { data: profili } = await db
   .eq("id", (await db.auth.getUser()).data.user.id)
   .single();
 
-if (profili?.vloga === "admin") {
+if (profili?.vloga === "skrbnik") {
   document.getElementById("admin-panel").style.display = "block";
   await ngarkoPunetoret();
 }

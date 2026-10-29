@@ -46,9 +46,40 @@
     
                          if (!error) {
   document.getElementById("orari").style.display = "block";
+const { data: profili } = await db
+  .from("profili")
+  .select("vloga")
+  .eq("id", (await db.auth.getUser()).data.user.id)
+  .single();
+
+if (profili?.vloga === "admin") {
+  document.getElementById("admin-panel").style.display = "block";
+  await ngarkoPunetoret();
+}
                          }
                          }
-                                                     
+   async function ngarkoPunetoret() {
+  const { data, error } = await db
+    .from("delavci")
+    .select("ime_priimek, ekipe(naziv)")
+    .order("ime_priimek");
+
+  const lista = document.getElementById("seznam-delavcev");
+
+  if (error) {
+    lista.textContent = "Napaka: " + error.message;
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  data.forEach(d => {
+    const p = document.createElement("p");
+    p.textContent =
+      d.ime_priimek + " – " + (d.ekipe?.naziv || "Brez ekipe");
+    lista.appendChild(p);
+  });
+   }                                                  
                        async function odjava() {
   const { error } = await db.auth.signOut();
 

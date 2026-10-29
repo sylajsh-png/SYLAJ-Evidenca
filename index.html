@@ -52,7 +52,7 @@ const {data,error}=await db.auth.signInWithPassword({email,password});if(error)t
 user=data.user;
 const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;
 role=profile.vloga;
-if(!['administrator','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');
+if (!['administrator', 'skrbnik', 'vodja'].includes(vloga)) throw new Error('Uporabnik nima dovoljenja za evidenco.');
 $('login').classList.add('hidden');$('app').classList.remove('hidden');$('who').textContent=(role==='skrbnik'?'Administrator':'Vodja')+' – '+email;
 await loadWorkers();await refresh();message('Prijava uspešna!');
 }catch(e){message('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}

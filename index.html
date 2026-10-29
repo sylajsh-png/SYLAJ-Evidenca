@@ -27,7 +27,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 'use strict';
-const url = "https://zofclcgkgwfsjrcewfml.supabase.co";
+const SUPABASE_URL='https://zofclcgkgwfsjrcewfml.supabase.co';
 const KEY='sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ';
 let db=null,user=null,role='',workers=[],entries=[],monthEntries=[],yearEntries=[];
 const $=id=>document.getElementById(id);
@@ -41,7 +41,7 @@ function fmt(n){return Math.floor(n/60)+' h '+String(n%60).padStart(2,'0')+' min
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function option(id,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;$(id).appendChild(o)}
 function switchMode(){$('automatic').classList.toggle('hidden',$('mode').value!=='auto');$('manual').classList.toggle('hidden',$('mode').value!=='manual')}
-try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=window.supabase.createClient(URL,KEY)}catch(e){message('Napaka: '+e.message)}
+try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=window.supabase.createClient(SUPABASE_URL,KEY)}catch(e){message('Napaka: '+e.message)}
 async function prijava(){
 if(!db)return message('Supabase ni povezan.');
 const email=$('email').value.trim(),password=$('password').value;
@@ -115,7 +115,7 @@ function exportCSV(){const names=new Map(workers.map(w=>[String(w.id),w.ime_prii
 const data=[['Vrsta','Datum / mesec','Delavec','Začetek','Konec','Minute','Opomba']];
 for(const e of arr){const name=names.get(String(e.delavec_id))||'',d=duration(e);data.push(['Dnevno',e.datum,name,timeDisplay(e.zacetek),timeDisplay(e.konec),d??'',e.opomba||'']);if(d!=null){const k=name+'|'+e.datum.slice(0,7);monthly.set(k,(monthly.get(k)||0)+d);yearly.set(name,(yearly.get(name)||0)+d)}}
 for(const [key,n] of monthly){const i=key.lastIndexOf('|');data.push(['Mesečno',key.slice(i+1),key.slice(0,i),'','',n,''])}for(const [name,n] of yearly)data.push(['Letno',String($('year').value),name,'','',n,'']);
-const csv='\ufeff'+data.map(r=>r.map(csvCell).join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SYLAJ-Evidenca-'+$('year').value+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)
+const csv='\ufeff'+data.map(r=>r.map(csvCell).join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='SYLAJ-Evidenca-'+$('year').value+'.csv';a.click();setTimeout(()=>window.URL.revokeObjectURL(url),2000)
 }
 async function odjava(){try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];monthEntries=[];yearEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';message('Odjava uspešna.')}catch(e){message('Napaka: '+e.message)}}
 $('workDate').value=localDate();$('month').value=localDate().slice(0,7);$('year').value=new Date().getFullYear();

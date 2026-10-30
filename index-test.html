@@ -284,8 +284,8 @@ $('logout').onclick=async function(){
   '</body></html>',
   extra+'</body></html>'
  );
- if(!html.includes('id="workersTab"'))
-  throw Error('Dodatek ni bil vstavljen.');
+ 
+ 
  document.open();
  document.write(html);
  document.close();

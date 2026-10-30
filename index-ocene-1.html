@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="sl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SYLAJ-Evidenca – Ocene TEST</title><style>html,body{margin:0;width:100%;height:100%;background:#f3f6f9;font-family:system-ui}iframe{display:block;width:100%;height:100%;border:0}#status{position:fixed;top:8px;left:8px;right:8px;padding:12px;background:white;border:1px solid #ddd;border-radius:8px;z-index:99}</style></head><body>
+<div id="status">Nalaganje testne aplikacije ...</div><iframe id="application" title="SYLAJ Evidenca" src="./index-test.html?ocene=1"></iframe>
+<script>
+(function(){
+ const frame=document.getElementById('application');
+ const status=document.getElementById('status');
+ let installed=false,attempts=0;
+ const addon=`
+(function(){
+'use strict';
+if(document.getElementById('ratingsTab'))return;
+const tab=document.createElement('button');
+tab.id='ratingsTab';tab.textContent='Ocene delavcev';
+$('workersTab').after(tab);
+const panel=document.createElement('div');panel.id='ratingsView';panel.className='hidden';
+panel.innerHTML=\`<section class="card"><h2>Dnevne ocene delavcev</h2><div class="row">
+<label><span>Delavec</span><select id="ratingWorker"></select></label>
+<label><span>Datum</span><input type="date" id="ratingDate"></label>
+<label><span>Ocena (1–5)</span><select id="ratingScore"><option value="">Izberite oceno</option><option value="1">1 – Zelo slabo</option><option value="2">2 – Slabo</option><option value="3">3 – Dobro</option><option value="4">4 – Zelo dobro</option><option value="5">5 – Odlično</option></select></label></div>
+<div class="row"><label style="flex:1;min-width:230px"><span>Opravljeno delo</span><textarea id="ratingWork" rows="3" maxlength="2000" style="font:inherit;padding:10px;width:100%;border:1px solid #bac9d6;border-radius:8px" placeholder="Kaj je delavec danes delal?"></textarea></label><label style="flex:1;min-width:230px"><span>Opomba</span><textarea id="ratingNote" rows="3" maxlength="2000" style="font:inherit;padding:10px;width:100%;border:1px solid #bac9d6;border-radius:8px" placeholder="Opomba vodje"></textarea></label></div>
+<button id="ratingSave">Shrani dnevno oceno</button><button id="ratingReload" class="alt">Osveži</button><p id="ratingMessage" class="msg" role="status"></p></section>
+<section class="card"><h2>Pregled ocen</h2><div class="row"><label><span>Leto</span><input id="ratingYear" type="number" min="2020" max="2100"></label><label><span>Mesec</span><select id="ratingMonth"></select></label></div><div class="scroll"><table><thead><tr><th>Delavec</th><th>Mesec (povprečje)</th><th>Leto (povprečje)</th><th>Ocenjeni dnevi</th></tr></thead><tbody id="ratingAverages"></tbody></table></div><h3>Dnevni vnosi – izbrani mesec</h3><div class="scroll"><table><thead><tr><th>Datum</th><th>Delavec</th><th>Ocena</th><th>Opravljeno delo</th><th>Opomba</th></tr></thead><tbody id="ratingRows"></tbody></table></div></section>\`;
+$('workersView').after(panel);
+$('ratingDate').value=date();$('ratingYear').value=new Date().getFullYear();
+['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].forEach((n,i)=>{const o=document.createElement('option');o.value=i+1;o.textContent=n;$('ratingMonth').append(o)});
+$('ratingMonth').value=String(new Date().getMonth()+1);
+const notice=s=>msg(s,'ratingMessage');
+let ratingWorkers=[];
+function showRatingsTab(which){
+ $('ratingsView').classList.toggle('hidden',which!=='ratings');
+ $('ratingsTab').classList.toggle('active',which==='ratings');
+ if(which==='ratings')loadRatings();
+}
+const oldTab=showTab;
+showTab=function(which){oldTab(which);showRatingsTab(which)};
+tab.onclick=()=>showTab('ratings');
+async function getAllRatings(year){
+ let out=[],offset=0;
+ while(true){
+  const {data,error}=await db.from('ocene_delavcev')
+   .select('id,delavec_id,ekipa_id,datum,opravljeno_delo,opomba,ocena')
+   .gte('datum',year+'-01-01').lt('datum',(year+1)+'-01-01')
+   .order('datum',{ascending:false}).range(offset,offset+999);
+  if(error)throw error;
+  out.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000;
+ }
+ return out;
+}
+async function loadRatings(){
+ if(!user)return;
+ try{
+  const q=admin()?db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven').order('ime_priimek'):
+   db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe!inner(vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');
+  const {data,error}=await q;if(error)throw error;
+  ratingWorkers=data||[];
+  const select=$('ratingWorker'),previous=select.value;select.replaceChildren();
+  ratingWorkers.filter(w=>w.aktiven).forEach(w=>addOption('ratingWorker',w.id,w.ime_priimek));
+  if(ratingWorkers.some(w=>w.aktiven&&String(w.id)===previous))select.value=previous;
+  const year=Number($('ratingYear').value),month=Number($('ratingMonth').value);
+  if(!Number.isInteger(year)||year<2020||year>2100||month<1||month>12)throw Error('Neveljavno leto ali mesec.');
+  const ratings=await getAllRatings(year);
+  const names=new Map(ratingWorkers.map(w=>[String(w.id),w.ime_priimek]));
+  // Current leaders see only their workers; database RLS additionally restricts historical team records.
+  const visible=admin()?ratings:ratings.filter(r=>names.has(String(r.delavec_id)));
+  const monthRatings=visible.filter(r=>Number(r.datum.slice(5,7))===month);
+  const avg=arr=>arr.length?(arr.reduce((s,r)=>s+Number(r.ocena),0)/arr.length).toFixed(2):'—';
+  const summary=$('ratingAverages');summary.replaceChildren();
+  const ids=[...new Set(visible.map(r=>String(r.delavec_id)).concat(ratingWorkers.map(w=>String(w.id))))];
+  ids.forEach(id=>{
+   const yr=visible.filter(r=>String(r.delavec_id)===id);
+   const mo=monthRatings.filter(r=>String(r.delavec_id)===id);
+   const tr=document.createElement('tr');
+   [names.get(id)||('ID '+id),avg(mo),avg(yr),String(yr.length)].forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.append(td)});
+   summary.append(tr);
+  });
+  const body=$('ratingRows');body.replaceChildren();
+  monthRatings.forEach(r=>{
+   const tr=document.createElement('tr');
+   [r.datum,names.get(String(r.delavec_id))||('ID '+r.delavec_id),r.ocena,r.opravljeno_delo,r.opomba||''].forEach(value=>{const td=document.createElement('td');td.textContent=String(value);td.style.whiteSpace='normal';tr.append(td)});
+   body.append(tr);
+  });
+  notice('');
+ }catch(e){notice('Napaka: '+e.message)}
+}
+async function saveRating(){
+ if(!user)return;
+ const id=Number($('ratingWorker').value),datum=$('ratingDate').value,score=Number($('ratingScore').value),work=$('ratingWork').value.trim(),note=$('ratingNote').value.trim();
+ const worker=ratingWorkers.find(w=>Number(w.id)===id&&w.aktiven);
+ if(!worker||!/^\\d{4}-\\d{2}-\\d{2}$/.test(datum)||!Number.isInteger(score)||score<1||score>5||!work){notice('Izberite delavca, datum, oceno 1–5 in vnesite opravljeno delo.');return}
+ if(datum>date()){notice('Datum ne sme biti v prihodnosti.');return}
+ if(!confirm('Shraniti oceno '+score+' za '+worker.ime_priimek+' dne '+datum+'?'))return;
+ $('ratingSave').disabled=true;
+ try{
+  const {error}=await db.from('ocene_delavcev').insert({delavec_id:id,ekipa_id:worker.ekipa_id,datum,opravljeno_delo:work,opomba:note||null,ocena:score,ocenil_id:user.id});
+  if(error)throw error;
+  $('ratingWork').value='';$('ratingNote').value='';$('ratingScore').value='';
+  $('ratingYear').value=datum.slice(0,4);$('ratingMonth').value=String(Number(datum.slice(5,7)));
+  await loadRatings();notice('Ocena je shranjena.');
+ }catch(e){notice('Napaka: '+e.message+(String(e.code)==='23505'?' (Delavec ima za ta datum že oceno.)':''))}
+ finally{$('ratingSave').disabled=false}
+}
+$('ratingSave').onclick=saveRating;
+$('ratingReload').onclick=loadRatings;
+$('ratingYear').onchange=loadRatings;
+$('ratingMonth').onchange=loadRatings;
+const priorLogin=$('loginBtn').onclick;
+$('loginBtn').onclick=async function(){await priorLogin();if(user&&!$('app').classList.contains('hidden'))await loadRatings()};
+const priorLogout=$('logout').onclick;
+$('logout').onclick=async function(){await priorLogout();ratingWorkers=[];$('ratingsView').classList.add('hidden')};
+})();
+`;
+ const timer=setInterval(()=>{
+  if(installed){clearInterval(timer);return}
+  attempts++;
+  try{
+   const doc=frame.contentDocument;
+   if(!doc)return;
+   const ready=doc.getElementById('workersTab')&&doc.getElementById('workersView')&&doc.getElementById('loginBtn');
+   if(ready){
+    const script=doc.createElement('script');script.textContent=addon;doc.body.appendChild(script);
+    installed=!!doc.getElementById('ratingsTab');
+    if(installed){status.remove();clearInterval(timer)}
+    else status.textContent='Napaka pri nalaganju ocen. Preverite konzolo brskalnika.';
+   }else if(attempts>100){status.textContent='Testna aplikacija se ni naložila. Preverite index-test.html.';clearInterval(timer)}
+  }catch(e){status.textContent='Napaka: '+e.message;clearInterval(timer)}
+ },250);
+})();
+</script></body></html>

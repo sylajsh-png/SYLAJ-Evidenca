@@ -183,4 +183,173 @@ const priorLogout=$('logout').onclick;
 $('logout').onclick=async function(){await priorLogout();ratingWorkers=[];$('ratingsView').classList.add('hidden')};
 })();
 
-</script></body></html>
+// ===== SYLAJ GPS =====
+(function () {
+'use strict';
+
+const gpsTab = document.createElement('button');
+gpsTab.id = 'gpsTab';
+gpsTab.textContent = 'GPS';
+$('ratingsTab').after(gpsTab);
+
+const gpsView = document.createElement('div');
+gpsView.id = 'gpsView';
+gpsView.className = 'hidden';
+
+gpsView.innerHTML = `
+<section class="card">
+<h2>SYLAJ GPS</h2>
+<p id="gpsStatus">GPS ni aktiven.</p>
+<button id="gpsStart">Začni GPS</button>
+<button id="gpsStop" class="alt">Ustavi GPS</button>
+<button id="gpsRefresh">Osveži GPS</button>
+<p id="gpsMessage" class="msg"></p>
+<small>
+GPS je dovoljen med 05:00 in 21:00.
+Lokacija se beleži samo med aktivno sejo.
+</small>
+</section>`;
+
+$('ratingsView').after(gpsView);
+
+let gpsWatch = null;
+let gpsTimer = null;
+let gpsBusy = false;
+
+const gpsNotice = text =>
+  $('gpsMessage').textContent = text;
+
+function gpsAllowed() {
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  return minutes >= 300 && minutes < 1260;
+}
+
+async function gpsLocation(position) {
+  if (!user || !gpsAllowed() || gpsBusy) return;
+
+  gpsBusy = true;
+
+  try {
+    const {error} = await db.from('gps_lokacije').insert({
+      vodja_id: user.id,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      cas: new Date().toISOString()
+    });
+
+    if (error) throw error;
+
+    $('gpsStatus').textContent =
+      'GPS aktiven – ' + new Date().toLocaleTimeString('sl-SI');
+
+  } catch (e) {
+    gpsNotice('Napaka GPS: ' + e.message);
+  } finally {
+    gpsBusy = false;
+  }
+}
+
+function stopTracking() {
+  if (gpsWatch !== null) {
+    navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+  }
+
+  if (gpsTimer !== null) {
+    clearInterval(gpsTimer);
+    gpsTimer = null;
+  }
+}
+
+async function startGPS() {
+  if (!user || role !== 'vodja') return;
+
+  if (!gpsAllowed()) {
+    gpsNotice('GPS je dovoljen od 05:00 do 21:00.');
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    gpsNotice('Telefon ne podpira GPS.');
+    return;
+  }
+
+  try {
+    const {error} = await db.rpc('fillo_gps');
+    if (error) throw error;
+
+    stopTracking();
+
+    gpsWatch = navigator.geolocation.watchPosition(
+      gpsLocation,
+      e => gpsNotice('GPS: ' + e.message),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000
+      }
+    );
+
+    gpsTimer = setInterval(async () => {
+      if (!gpsAllowed()) {
+        await stopGPS();
+      }
+    }, 30000);
+
+    $('gpsStatus').textContent = 'GPS aktiven';
+    gpsNotice('GPS je zagnan.');
+
+  } catch (e) {
+    gpsNotice('Napaka: ' + e.message);
+  }
+}
+
+async function stopGPS() {
+  stopTracking();
+
+  try {
+    if (user && role === 'vodja') {
+      const {error} = await db.rpc('ndalo_gps');
+      if (error) throw error;
+    }
+
+    $('gpsStatus').textContent = 'GPS ni aktiven.';
+    gpsNotice('GPS ustavljen.');
+
+  } catch (e) {
+    gpsNotice('Napaka: ' + e.message);
+  }
+}
+
+gpsTab.onclick = () => {
+  showTab('gps');
+  gpsView.classList.remove('hidden');
+  gpsTab.classList.add('active');
+};
+
+const previousShowTab = showTab;
+
+showTab = function(which) {
+  previousShowTab(which);
+  gpsView.classList.toggle('hidden', which !== 'gps');
+  gpsTab.classList.toggle('active', which === 'gps');
+};
+
+$('gpsStart').onclick = startGPS;
+$('gpsStop').onclick = stopGPS;
+$('gpsRefresh').onclick = () => {
+  $('gpsStatus').textContent =
+    gpsWatch !== null ? 'GPS aktiven' : 'GPS ni aktiven';
+};
+
+const previousLogout = $('logout').onclick;
+
+$('logout').onclick = async function() {
+  if (gpsWatch !== null) {
+    await stopGPS();
+  }
+  await previousLogout();
+};
+
+})();</script></body></html>

@@ -368,7 +368,10 @@ $('logout').onclick = async function() {
   panel.id = 'gpsAdminMap';
   panel.innerHTML = `
     <h2>Lokacije ekip</h2>
-    <p>Zadnje zabeležene lokacije Fitimija in Lumija.</p>
+    
+<div id="gpsLiveMap" style="height:400px;min-height:400px;width:100%;border-radius:12px;margin-top:15px;"></div>
+
+
     <button id="gpsMapRefresh">Osveži lokacije</button>
     <p id="gpsMapStatus" class="msg"></p>
     <div id="gpsMapResults"></div>

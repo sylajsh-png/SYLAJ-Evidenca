@@ -352,4 +352,118 @@ $('logout').onclick = async function() {
   await previousLogout();
 };
 
-})();</script></body></html>
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const panel = document.createElement('section');
+  panel.className = 'card hidden';
+  panel.id = 'gpsAdminMap';
+  panel.innerHTML = `
+    <h2>Lokacije ekip</h2>
+    <p>Zadnje zabeležene lokacije Fitimija in Lumija.</p>
+    <button id="gpsMapRefresh">Osveži lokacije</button>
+    <p id="gpsMapStatus" class="msg"></p>
+    <div id="gpsMapResults"></div>
+  `;
+
+  document.getElementById('gpsView').append(panel);
+
+  const status = document.getElementById('gpsMapStatus');
+  const results = document.getElementById('gpsMapResults');
+
+  async function refreshGPSMap() {
+    if (!user || !admin()) return;
+
+    status.textContent = 'Nalagam lokacije ...';
+    results.replaceChildren();
+
+    try {
+      const {data: leaders, error: le} = await db
+        .from('ekipe')
+        .select('naziv,vodja_id');
+
+      if (le) throw le;
+
+      const unique = [...new Map(
+        (leaders || [])
+          .filter(t => t.vodja_id)
+          .map(t => [t.vodja_id, t])
+      ).values()];
+
+      for (const leader of unique) {
+        const {data, error} = await db
+          .from('gps_lokacije')
+          .select('latitude,longitude,cas')
+          .eq('vodja_id', leader.vodja_id)
+          .order('cas', {ascending:false})
+          .limit(1);
+
+        if (error) throw error;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const title = document.createElement('h3');
+        title.textContent = leader.naziv;
+        card.append(title);
+
+        const location = data?.[0];
+
+        if (!location) {
+          const p = document.createElement('p');
+          p.textContent = 'Ni zabeležene lokacije.';
+          card.append(p);
+        } else {
+          const lat = Number(location.latitude);
+          const lon = Number(location.longitude);
+          const time = new Date(location.cas);
+          if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+              Math.abs(lat) > 90 || Math.abs(lon) > 180 ||
+              !Number.isFinite(time.getTime())) {
+            throw Error('Neveljavni GPS podatki.');
+          }
+
+          const p = document.createElement('p');
+          p.textContent = 'Zadnja lokacija: ' +
+            time.toLocaleString('sl-SI');
+
+          const age = Date.now() - time.getTime();
+          const info = document.createElement('p');
+          info.textContent = age >= 0 && age <= 120000
+            ? 'Sveža lokacija (do 2 minuti)'
+            : 'Starejša lokacija – trenutni položaj ni potrjen';
+
+          const link = document.createElement('a');
+          link.href = 'https://www.google.com/maps?q=' +
+            encodeURIComponent(lat + ',' + lon);
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = 'Odpri lokacijo v Google Maps';
+
+          card.append(p, info, link);
+        }
+
+        results.append(card);
+      }
+
+      status.textContent = 'Lokacije osvežene.';
+    } catch (e) {
+      status.textContent = 'Napaka: ' + e.message;
+    }
+  }
+
+  document.getElementById('gpsMapRefresh').onclick =
+    refreshGPSMap;
+
+  document.getElementById('gpsTab')
+    .addEventListener('click', () => {
+      panel.classList.toggle('hidden', !admin());
+      if (admin()) refreshGPSMap();
+    });
+})();
+</script>
+</body></html>

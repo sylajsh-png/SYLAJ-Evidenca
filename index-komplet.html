@@ -1403,6 +1403,12 @@ $('addSite').addEventListener('click', async () => {
   await loadSites();
 });
 
+$('sitesTab').addEventListener('click', async () => {
+  showTab('sites');
+  $('sitesView').classList.remove('hidden');
+  await loadSites();
+});
+
 })();
 </script>
 

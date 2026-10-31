@@ -1165,22 +1165,89 @@ $('recognizeToolAI').onclick = async () => {
       'Xenova/clip-vit-base-patch32'
     );
 
-    const labels = [
-      'excavator', 'drill', 'hammer', 'screwdriver',
-      'angle grinder', 'chainsaw', 'concrete mixer',
-      'plate compactor', 'air compressor', 'generator',
-      'laser level', 'water pump', 'shovel', 'wrench'
-    ];
+  
+const tools = {
+  'lighter': ['Vžigalnik', 'Shkrepëse'],
+  'matchbox': ['Vžigalice', 'Shkrepëse druri'],
+  'drill': ['Vrtalnik', 'Trapan'],
+  'hammer': ['Kladivo', 'Çekiç'],
+  'screwdriver': ['Izvijač', 'Kaçavidë'],
+  'angle grinder': ['Kotni brusilnik', 'Fleks'],
+  'chainsaw': ['Motorna žaga', 'Motorsharrë'],
+  'circular saw': ['Krožna žaga', 'Sharrë rrethore'],
+  'welding machine': ['Varilni aparat', 'Aparat saldimi'],
+  'excavator': ['Bager', 'Eskavator'],
+  'wheel loader': ['Nakladalnik', 'Ngarkues'],
+  'bulldozer': ['Buldožer', 'Buldozer'],
+  'plate compactor': ['Vibracijska plošča', 'Pllakë vibruese'],
+  'rammer compactor': ['Vibracijski nabijalnik', 'Zhabë'],
+  'concrete mixer': ['Mešalec betona', 'Betonierë'],
+  'air compressor': ['Kompresor', 'Kompresor ajri'],
+  'generator': ['Agregat', 'Gjenerator'],
+  'laser level': ['Laserski nivelir', 'Nivelues laserik'],
+  'water pump': ['Vodna črpalka', 'Pompë uji'],
+  'shovel': ['Lopata', 'Lopatë'],
+  'pickaxe': ['Kramp', 'Kazmë'],
+  'wrench': ['Ključ', 'Çelës'],
+  'pliers': ['Klešče', 'Dana'],
+  'ladder': ['Lestev', 'Shkallë'],
+  'wheelbarrow': ['Samokolnica', 'Karrocë dore'],
+  'measuring tape': ['Merilni trak', 'Metër'],
+  'extension cord': ['Podaljšek', 'Kabllo zgjatuese'],
+  'electric cable': ['Električni kabel', 'Kabllo elektrike'],
+  'water pipe': ['Vodovodna cev', 'Tub uji'],
+  'gas cylinder': ['Plinska jeklenka', 'Bombolë gazi'],
+  'safety helmet': ['Zaščitna čelada', 'Helmetë'],
+  'work gloves': ['Delovne rokavice', 'Doreza pune'],
+  'safety glasses': ['Zaščitna očala', 'Syze mbrojtëse'],
+  'fire extinguisher': ['Gasilni aparat', 'Fikës zjarri'],
+  'flashlight': ['Svetilka', 'Llambë dore'],
+  'battery': ['Akumulator', 'Bateri'],
+  'screw': ['Vijak', 'Vidë'],
+  'nail': ['Žebelj', 'Gozhdë'],
+  'bolt': ['Vijak z matico', 'Bulon'],
+  'traffic cone': ['Prometni stožec', 'Kon trafiku']
+};
+
+const labels = Object.keys(tools);
+
 
     const result = await classifier(
       URL.createObjectURL(file),
       labels
     );
 
-    if (result?.length) {
-      $('newToolName').value = result[0].label;
-      status.textContent = 'AI predlaga: ' + result[0].label;
-    }
+    
+if (result?.length) {
+  const top3 = result.slice(0, 3);
+  status.replaceChildren();
+
+  const heading = document.createElement('p');
+  heading.textContent = '🤖 AI predlaga / AI propozon / AI suggests:';
+  status.appendChild(heading);
+
+  top3.forEach((item, index) => {
+    const names = tools[item.label];
+    if (!names) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.display = 'block';
+    btn.style.margin = '8px 0';
+    btn.style.whiteSpace = 'normal';
+
+    btn.textContent =
+      `${index + 1}. 🇸🇮 ${names[0]} | 🇦🇱 ${names[1]} | 🇬🇧 ${item.label}`;
+
+    btn.onclick = () => {
+      $('newToolName').value = names[0];
+      heading.textContent = '✅ Izbrano / U zgjodh: ' + names[0];
+    };
+
+    status.appendChild(btn);
+  });
+}
+
   } catch (e) {
     status.textContent = 'Napaka AI: ' + e.message;
   }

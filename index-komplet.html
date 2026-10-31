@@ -26,6 +26,9 @@
           <option value="">Izberite orodje</option>
         </select>
       </label>
+      <img id="toolMainPhoto"
+     alt="Fotografija orodja"
+     style="display:none;width:180px;max-width:100%;border-radius:10px;margin:10px 0;">
       <label>
         <span>Količina</span>
         <input id="toolQty" type="number" min="1" step="1" value="1">
@@ -184,6 +187,32 @@ async function loadToolNames(){
     addOption('toolName',t.id,t.naziv)
   );
 }
+
+$('toolName').addEventListener('change', async () => {
+  const foto = $('toolMainPhoto');
+  foto.style.display = 'none';
+  foto.removeAttribute('src');
+
+  const id = $('toolName').value;
+  if (!id) return;
+
+  const { data, error } = await db
+    .from('orodja')
+    .select('fotografija')
+    .eq('id', id)
+    .single();
+
+  if (error || !data?.fotografija) return;
+
+  const { data: urlData } = await db.storage
+    .from('sylaj-fotografije')
+    .createSignedUrl(data.fotografija, 3600);
+
+  if (urlData?.signedUrl) {
+    foto.src = urlData.signedUrl;
+    foto.style.display = 'block';
+  }
+});
 
 
 async function takeTool(){

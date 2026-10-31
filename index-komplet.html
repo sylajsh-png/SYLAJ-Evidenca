@@ -509,4 +509,154 @@ if (mapPoints.length > 0) {
     });
 })();
 </script>
+ 
+<script>
+(function () {
+  'use strict';
+
+  const panel = document.createElement('section');
+  panel.className = 'card hidden';
+  panel.id = 'toolRegisterPanel';
+
+  panel.innerHTML = `
+    <h2>Dodaj novo orodje</h2>
+    <p>Vsako orodje se evidentira posebej.</p>
+
+    <div class="row">
+      <label>
+        <span>Fotografiraj orodje</span>
+        <input id="newToolPhoto"
+          type="file"
+          accept="image/*"
+          capture="environment">
+      </label>
+    </div>
+
+    <img id="newToolPreview"
+      alt="Fotografija orodja"
+      style="display:none;max-width:250px;width:100%;
+      border-radius:10px;margin:10px 0">
+
+    <div class="row">
+      <label>
+        <span>Ime orodja *</span>
+        <input id="newToolName"
+          placeholder="Npr. Bosch vrtalnik">
+      </label>
+
+      <label>
+        <span>Znamka</span>
+        <input id="newToolBrand"
+          placeholder="Npr. Bosch">
+      </label>
+
+      <label>
+        <span>Model</span>
+        <input id="newToolModel">
+      </label>
+
+      <label>
+        <span>Serijska številka</span>
+        <input id="newToolSerial"
+          placeholder="Ni obvezno">
+      </label>
+    </div>
+
+    <button id="saveNewTool">
+      Shrani orodje
+    </button>
+
+    <p id="newToolMessage" class="msg"></p>
+  `;
+
+  $('toolsView').prepend(panel);
+
+  const photo = $('newToolPhoto');
+  const preview = $('newToolPreview');
+  let previewUrl = null;
+
+  function updateVisibility() {
+    panel.classList.toggle('hidden', !admin());
+  }
+
+  $('toolsTab').addEventListener(
+    'click', updateVisibility
+  );
+
+  photo.onchange = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    preview.style.display = 'none';
+
+    const file = photo.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      msg('Izberite fotografijo.', 'newToolMessage');
+      return;
+    }
+
+    previewUrl = URL.createObjectURL(file);
+    preview.src = previewUrl;
+    preview.style.display = 'block';
+  };
+
+  $('saveNewTool').onclick = async () => {
+    if (!user || !admin()) return;
+
+    const naziv = $('newToolName').value.trim();
+    const znamka = $('newToolBrand').value.trim();
+    const model = $('newToolModel').value.trim();
+    const serijska = $('newToolSerial').value.trim();
+
+    if (!naziv) {
+      msg('Vnesite ime orodja.', 'newToolMessage');
+      return;
+    }
+
+    const btn = $('saveNewTool');
+    btn.disabled = true;
+
+    try {
+      const {data, error} = await db
+        .from('orodja')
+        .insert({
+          naziv,
+          znamka: znamka || null,
+          model: model || null,
+          serijska_stevilka: serijska || null,
+          status: 'v_skladiscu',
+          ai_prepoznano: false
+        })
+        .select('id,interna_oznaka')
+        .single();
+
+      if (error) throw error;
+
+      msg(
+        'Orodje shranjeno: ' + data.interna_oznaka,
+        'newToolMessage'
+      );
+
+      $('newToolName').value = '';
+      $('newToolBrand').value = '';
+      $('newToolModel').value = '';
+      $('newToolSerial').value = '';
+      photo.value = '';
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+
+    } catch (e) {
+      msg('Napaka: ' + e.message, 'newToolMessage');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+})();
+</script>
+
 </body></html>

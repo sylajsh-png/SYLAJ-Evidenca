@@ -1142,6 +1142,28 @@ if (mapPoints.length > 0) {
 
       if (error) throw error;
 
+      const fotoFile = photo.files?.[0];
+
+if (fotoFile) {
+  const ext = fotoFile.name.split('.').pop().toLowerCase();
+  const path = `orodja/${data.id}/${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await db.storage
+    .from('sylaj-fotografije')
+    .upload(path, fotoFile, {
+      contentType: fotoFile.type,
+      upsert: false
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { error: fotoError } = await db
+    .from('orodja')
+    .update({ fotografija: path })
+    .eq('id', data.id);
+
+  if (fotoError) throw fotoError;
+}
       msg(
         'Orodje shranjeno: ' + data.interna_oznaka,
         'newToolMessage'

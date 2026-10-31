@@ -119,6 +119,27 @@
   </button>
 </div>
 
+<section id="sitesView" class="card">
+  <h2>Gradbišča</h2>
+
+  <label>Naziv gradbišča</label>
+  <input id="siteName" type="text"
+         placeholder="Ime gradbišča">
+
+  <label>Naslov</label>
+  <input id="siteAddress" type="text"
+         placeholder="Naslov gradbišča">
+
+  <button id="addSite" type="button">
+    Dodaj gradbišče
+  </button>
+
+  <p id="siteMessage" class="msg"></p>
+
+  <h3>Moja gradbišča</h3>
+  <div id="siteList"></div>
+</section>
+
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -1329,6 +1350,56 @@ if (fotoFile) {
       btn.disabled = false;
     }
   };
+
+async function loadSites() {
+  const list = $('siteList');
+  list.textContent = 'Nalaganje...';
+
+  const { data, error } = await db
+    .from('gradbisca')
+    .select('id,naziv,naslov,created_by')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Napaka: ' + error.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  for (const site of data || []) {
+    const item = document.createElement('p');
+    item.textContent = site.naziv +
+      (site.naslov ? ' - ' + site.naslov : '');
+    list.appendChild(item);
+  }
+}
+
+$('addSite').addEventListener('click', async () => {
+  const naziv = $('siteName').value.trim();
+  const naslov = $('siteAddress').value.trim();
+
+  if (!naziv) {
+    msg('Vpišite naziv gradbišča', 'siteMessage');
+    return;
+  }
+
+  const { error } = await db.from('gradbisca').insert({
+    naziv,
+    naslov,
+    created_by: user.id
+  });
+
+  if (error) {
+    msg('Napaka: ' + error.message, 'siteMessage');
+    return;
+  }
+
+  $('siteName').value = '';
+  $('siteAddress').value = '';
+  msg('Gradbišče shranjeno', 'siteMessage');
+  await loadSites();
+});
 
 })();
 </script>

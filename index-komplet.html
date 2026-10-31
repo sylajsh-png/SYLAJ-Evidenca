@@ -37,10 +37,52 @@
           <option>Poškodovano</option>
         </select>
       </label>
-      <label>
-        <span>Opomba</span>
-        <input id="toolNote">
-      </label>
+      
+<label>
+  <span>Opomba</span>
+  <input id="toolNote" placeholder="Vpiši opombo">
+</label>
+
+<div>
+  <span>Fotografije ob prevzemu</span>
+
+  <label>
+    <span>📷 Fotografiraj</span>
+    <input id="toolCamera" type="file"
+      accept="image/*" capture="environment"
+      multiple>
+  </label>
+
+  <label>
+    <span>🖼️ Naloži fotografije</span>
+    <input id="toolPhotos" type="file"
+      accept="image/*" multiple>
+  </label>
+
+  <div id="toolPhotosPreview"></div>
+</div>
+
+</label>
+
+<div>
+  <span>Fotografije ob prevzemu</span>
+
+  <label>
+    <span>📷 Fotografiraj</span>
+    <input id="toolCamera" type="file"
+      accept="image/*" capture="environment"
+      style="display:none" multiple>
+  </label>
+
+  <label>
+    <span>🖼️ Naloži fotografije</span>
+    <input id="toolPhotos" type="file"
+      accept="image/*" multiple>
+  </label>
+
+  <div id="toolPhotosPreview"></div>
+</div>      
+      
     </div>
     <button id="takeTool">Shrani prevzem</button>
     <p id="toolMessage" class="msg"></p>
@@ -161,18 +203,29 @@ async function takeTool(){
 
     if(toolError)throw toolError;
 
-    const {error}=await db.from('evidenca_orodja').insert({
-      orodje_id:tool.id,
-      naziv_orodja:tool.naziv,
-      kolicina:qty,
-      ekipa_id:team.id,
-      delavec_id:Number(worker),
-      prevzel_uid:user.id,
-      stanje_ob_prevzemu:$('toolCondition').value,
-      opombe:$('toolNote').value.trim()||null
-    });
+    
+const {data: regjistrimi, error} = await db
+  .from('evidenca_orodja')
+  .insert({
+    orodje_id: tool.id,
+    naziv_orodja: tool.naziv,
+    kolicina: qty,
+    ekipa_id: team.id,
+    delavec_id: Number(worker),
+    prevzel_uid: user.id,
+    stanje_ob_prevzemu: $('toolCondition').value,
+    opombe: $('toolNote').value.trim() || null
+  })
+  .select('id')
+  .single();
 
-    if(error)throw error;
+if(error) throw error;
+
+const photoCount = await uploadToolPhotos(
+  regjistrimi.id,
+  'prevzem'
+);
+
 
     $('toolName').value='';
     $('toolNote').value='';
@@ -185,6 +238,59 @@ async function takeTool(){
   }
 }
 
+
+async function uploadToolPhotos(regjistrimiId, lloji = 'prevzem') {
+  const camera = document.getElementById('toolCamera');
+  const gallery = document.getElementById('toolPhotos');
+
+  const files = [
+    ...Array.from(camera?.files || []),
+    ...Array.from(gallery?.files || [])
+  ];
+
+  if (!files.length) return 0;
+  if (!user?.id) throw new Error('Uporabnik ni prijavljen.');
+
+  let uploaded = 0;
+
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Dovoljene so samo fotografije.');
+    }
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    const safeExt = /^[a-z0-9]{1,8}$/.test(ext) ? ext : 'jpg';
+    const unique = crypto.randomUUID();
+    const path = `${user.id}/${regjistrimiId}/${unique}.${safeExt}`;
+
+    const { error: uploadError } = await db.storage
+      .from('sylaj-fotografije')
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { error: saveError } = await db
+      .from('fotografite_opomba')
+      .insert({
+        lloji: lloji,
+        regjistrimi_id: regjistrimiId,
+        fotografia_path: path,
+        krijuar_nga: user.id
+      });
+
+    if (saveError) throw saveError;
+
+    uploaded++;
+  }
+
+  camera.value = '';
+  gallery.value = '';
+
+  return uploaded;
+}
 
 async function refreshTools(){
   if(!user)return;

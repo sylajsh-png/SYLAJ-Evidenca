@@ -185,7 +185,34 @@ async function takeTool(){
   }
 }
 
-async function refreshTools(){if(!user)return;try{let q=db.from('evidenca_orodja').select('id,naziv_orodja,kolicina,ekipa_id,delavec_id,datum_prevzema,datum_vracila,vracilo_potrjeno,stanje_ob_prevzemu,stanje_ob_vracilu,opombe').order('datum_prevzema',{ascending:false}).limit(1000);if(!admin()){if(!teams.length){toolEntries=[];renderTools();return}q=q.in('ekipa_id',teams.map(t=>t.id))}const {data,error}=await q;if(error)throw error;toolEntries=data||[];renderTools()}catch(e){msg('Napaka pri branju orodja: '+e.message,'toolMessage')}}
+
+async function refreshTools(){
+  if(!user)return;
+  try{
+    let q=db.from('evidenca_orodja')
+      .select('id,naziv_orodja,kolicina,ekipa_id,delavec_id,prevzel_uid,datum_prevzema,datum_vracila,vracilo_potrjeno,stanje_ob_prevzemu,stanje_ob_vracilu,opombe')
+      .order('datum_prevzema',{ascending:false})
+      .limit(1000);
+
+    if(!admin()){
+      if(!teams.length){
+        toolEntries=[];
+        renderTools();
+        return;
+      }
+      q=q.in('ekipa_id',teams.map(t=>t.id));
+    }
+
+    const {data,error}=await q;
+    if(error)throw error;
+
+    toolEntries=data||[];
+    renderTools();
+  }catch(e){
+    msg('Napaka pri branju orodja: '+e.message,'toolMessage');
+  }
+}
+
 
 function renderTools(){
   const body=$('toolRows');

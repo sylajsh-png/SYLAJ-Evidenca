@@ -186,7 +186,122 @@ async function takeTool(){
 }
 
 async function refreshTools(){if(!user)return;try{let q=db.from('evidenca_orodja').select('id,naziv_orodja,kolicina,ekipa_id,delavec_id,datum_prevzema,datum_vracila,vracilo_potrjeno,stanje_ob_prevzemu,stanje_ob_vracilu,opombe').order('datum_prevzema',{ascending:false}).limit(1000);if(!admin()){if(!teams.length){toolEntries=[];renderTools();return}q=q.in('ekipa_id',teams.map(t=>t.id))}const {data,error}=await q;if(error)throw error;toolEntries=data||[];renderTools()}catch(e){msg('Napaka pri branju orodja: '+e.message,'toolMessage')}}
-function renderTools(){const body=$('toolRows');body.replaceChildren();const tn=new Map(teams.map(t=>[String(t.id),t.naziv]));const wn=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));for(const e of toolEntries){const tr=document.createElement('tr');for(const v of [e.naziv_orodja,e.kolicina,tn.get(String(e.ekipa_id))||e.ekipa_id,wn.get(String(e.delavec_id))||e.delavec_id,e.datum_prevzema?new Date(e.datum_prevzema).toLocaleString('sl-SI'):'',e.stanje_ob_prevzemu||'',e.datum_vracila?new Date(e.datum_vracila).toLocaleString('sl-SI'):'—',e.stanje_ob_vracilu||'—',e.opombe||'']){const td=document.createElement('td');td.textContent=v;tr.append(td)}const td=document.createElement('td');if(e.vracilo_potrjeno)td.textContent='Potrjeno';else if(admin()){const b=document.createElement('button');b.textContent='Potrdi vračilo';b.onclick=()=>confirmToolReturn(e.id);td.append(b)}else td.textContent='Čaka na administratorja';tr.append(td);body.append(tr)}if(!toolEntries.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=10;td.textContent='Ni evidentiranega orodja.';tr.append(td);body.append(tr)}}
+
+function renderTools(){
+  const body=$('toolRows');
+  body.replaceChildren();
+  const tn=new Map(teams.map(t=>[String(t.id),t.naziv]));
+  const wn=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));
+
+  for(const e of toolEntries){
+    const tr=document.createElement('tr');
+
+    const values=[
+      e.naziv_orodja,
+      e.kolicina,
+      tn.get(String(e.ekipa_id))||e.ekipa_id,
+      wn.get(String(e.delavec_id))||e.delavec_id,
+      e.datum_prevzema
+        ?new Date(e.datum_prevzema).toLocaleString('sl-SI'):'',
+      e.stanje_ob_prevzemu||'',
+      e.datum_vracila
+        ?new Date(e.datum_vracila).toLocaleString('sl-SI'):'—',
+      e.stanje_ob_vracilu||'—',
+      e.opombe||''
+    ];
+
+    for(const v of values){
+      const td=document.createElement('td');
+      td.textContent=v;
+      tr.append(td);
+    }
+
+    const td=document.createElement('td');
+
+    if(e.vracilo_potrjeno){
+      td.textContent='Potrjeno';
+    }else if(!e.datum_vracila){
+      if(admin() || e.prevzel_uid===user?.id){
+        const b=document.createElement('button');
+        b.textContent='Vrni orodje';
+        b.onclick=()=>returnTool(e.id);
+        td.append(b);
+      }else{
+        td.textContent='Ni vrnjeno';
+      }
+    }else if(admin()){
+      const b=document.createElement('button');
+      b.textContent='Potrdi vračilo';
+      b.onclick=()=>confirmToolReturn(e.id);
+      td.append(b);
+    }else{
+      td.textContent='Čaka na administratorja';
+    }
+
+    tr.append(td);
+    body.append(tr);
+  }
+
+  if(!toolEntries.length){
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');
+    td.colSpan=10;
+    td.textContent='Ni evidentiranega orodja.';
+    tr.append(td);
+    body.append(tr);
+  }
+}
+
+async function returnTool(id) {
+  try {
+    const e = toolEntries.find(x => String(x.id) === String(id));
+
+    if (!e) throw Error('Orodje ni najdeno.');
+    if (e.datum_vracila) throw Error('Orodje je že vrnjeno.');
+
+    if (!admin() && String(e.prevzel_uid) !== String(user.id)) {
+      throw Error('Nimate dovoljenja za vračilo.');
+    }
+
+    const stanje = prompt(
+      'Stanje ob vrnitvi (V redu / Poškodovano):',
+      'V redu'
+    );
+
+    if (stanje === null) return;
+
+    const odgovor = stanje.trim().toLowerCase();
+
+    if (!['v redu', 'poškodovano'].includes(odgovor)) {
+      throw Error('Vnesite V redu ali Poškodovano.');
+    }
+
+    const { data, error } = await db
+      .from('evidenca_orodja')
+      .update({
+        datum_vracila: new Date().toISOString(),
+        stanje_ob_vracilu: odgovor === 'v redu'
+          ? 'V redu'
+          : 'Poškodovano',
+        vracilo_potrjeno: false
+      })
+      .eq('id', id)
+      .is('datum_vracila', null)
+      .select('id');
+
+    if (error) throw error;
+    if (!data || !data.length) {
+      throw Error('Vračilo ni bilo shranjeno.');
+    }
+
+    msg('Vračilo shranjeno. Čaka na potrditev administratorja.', 'toolMessage');
+    await refreshTools();
+
+  } catch (e) {
+    msg('Napaka: ' + e.message, 'toolMessage');
+  }
+}
+
 async function confirmToolReturn(id){if(!admin())return;const e=toolEntries.find(x=>String(x.id)===String(id));if(!e||e.vracilo_potrjeno)return;const answer=prompt('Stanje ob vrnitvi: V redu ali Poškodovano','V redu');if(answer===null)return;const c=answer.trim().toLowerCase();if(!['v redu','poškodovano','poskodovano'].includes(c))return alert('Vnesite V redu ali Poškodovano.');if(!confirm('Potrdite vračilo: '+e.naziv_orodja+'?'))return;try{const now=new Date().toISOString();const {data,error}=await db.from('evidenca_orodja').update({datum_vracila:now,vracilo_potrjeno:true,potrjeno_uid:user.id,datum_potrditve:now,stanje_ob_vracilu:c==='v redu'?'V redu':'Poškodovano'}).eq('id',id).eq('vracilo_potrjeno',false).select('id');if(error)throw error;if(!data?.length)throw Error('Vračilo ni bilo posodobljeno.');msg('Vračilo potrjeno.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}}
 async function odjava(){try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];teams=[];monthEntries=[];yearEntries=[];toolEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';msg('Odjava uspešna.')}catch(e){msg('Napaka: '+e.message)}}
 

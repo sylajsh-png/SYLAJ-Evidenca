@@ -114,6 +114,25 @@
 </div>
 </div>
 
+<div id="returnPhotoPanel" class="card" style="display:none">
+  <h3>Vračilo orodja</h3>
+
+  <label>Opomba</label>
+  <input id="returnNote" placeholder="Vpiši opombo">
+
+  <label>📷 Fotografiraj</label>
+  <input id="returnCamera" type="file"
+    accept="image/*" capture="environment">
+
+  <label>🖼️ Naloži fotografije</label>
+  <input id="returnPhotos" type="file"
+    accept="image/*" multiple>
+
+  <button id="saveReturnPhotos" type="button">
+    Shrani vračilo
+  </button>
+</div>
+
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -385,6 +404,10 @@ function renderTools(){
   }
 }
 
+
+
+let returnToolId = null;
+
 async function returnTool(id) {
   try {
     const e = toolEntries.find(x => String(x.id) === String(id));
@@ -409,14 +432,44 @@ async function returnTool(id) {
       throw Error('Vnesite V redu ali Poškodovano.');
     }
 
+    returnToolId = {
+      id: e.id,
+      stanje: odgovor === 'v redu' ? 'V redu' : 'Poškodovano'
+    };
+
+    $('returnNote').value = '';
+    $('returnCamera').value = '';
+    $('returnPhotos').value = '';
+
+    $('returnPhotoPanel').style.display = 'block';
+    $('returnPhotoPanel').scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+
+  } catch (e) {
+    msg('Napaka: ' + e.message, 'toolMessage');
+  }
+}
+
+async function saveToolReturn() {
+  const button = $('saveReturnPhotos');
+
+  try {
+    if (!returnToolId) throw Error('Najprej izberite orodje.');
+
+    button.disabled = true;
+
+    const { id, stanje } = returnToolId;
+    const opomba = $('returnNote').value.trim();
+
     const { data, error } = await db
       .from('evidenca_orodja')
       .update({
         datum_vracila: new Date().toISOString(),
-        stanje_ob_vracilu: odgovor === 'v redu'
-          ? 'V redu'
-          : 'Poškodovano',
-        vracilo_potrjeno: false
+        stanje_ob_vracilu: stanje,
+        vracilo_potrjeno: false,
+        ...(opomba ? { opombe: opomba } : {})
       })
       .eq('id', id)
       .is('datum_vracila', null)
@@ -427,13 +480,70 @@ async function returnTool(id) {
       throw Error('Vračilo ni bilo shranjeno.');
     }
 
-    msg('Vračilo shranjeno. Čaka na potrditev administratorja.', 'toolMessage');
+    const camera = $('returnCamera');
+    const gallery = $('returnPhotos');
+
+    const files = [
+      ...Array.from(camera.files || []),
+      ...Array.from(gallery.files || [])
+    ];
+
+    let uploaded = 0;
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        throw Error('Dovoljene so samo fotografije.');
+      }
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      const safeExt = /^[a-z0-9]{1,8}$/.test(ext) ? ext : 'jpg';
+      const path = `${user.id}/${id}/${crypto.randomUUID()}.${safeExt}`;
+
+      const { error: uploadError } = await db.storage
+        .from('sylaj-fotografije')
+        .upload(path, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { error: saveError } = await db
+        .from('fotografite_opomba')
+        .insert({
+          lloji: 'vracilo',
+          regjistrimi_id: id,
+          opomba: opomba || null,
+          fotografia_path: path,
+          ekipa_id: toolEntries.find(
+            x => String(x.id) === String(id)
+          )?.ekipa_id || null,
+          krijuar_nga: user.id
+        });
+
+      if (saveError) throw saveError;
+      uploaded++;
+    }
+
+    returnToolId = null;
+    $('returnPhotoPanel').style.display = 'none';
+
+    msg(
+      `Vračilo shranjeno. Fotografije: ${uploaded}. Čaka na potrditev administratorja.`,
+      'toolMessage'
+    );
+
     await refreshTools();
 
   } catch (e) {
     msg('Napaka: ' + e.message, 'toolMessage');
+  } finally {
+    button.disabled = false;
   }
 }
+
+$('saveReturnPhotos').onclick = saveToolReturn;
+
 
 async function confirmToolReturn(id){if(!admin())return;const e=toolEntries.find(x=>String(x.id)===String(id));if(!e||e.vracilo_potrjeno)return;const answer=prompt('Stanje ob vrnitvi: V redu ali Poškodovano','V redu');if(answer===null)return;const c=answer.trim().toLowerCase();if(!['v redu','poškodovano','poskodovano'].includes(c))return alert('Vnesite V redu ali Poškodovano.');if(!confirm('Potrdite vračilo: '+e.naziv_orodja+'?'))return;try{const now=new Date().toISOString();const {data,error}=await db.from('evidenca_orodja').update({datum_vracila:now,vracilo_potrjeno:true,potrjeno_uid:user.id,datum_potrditve:now,stanje_ob_vracilu:c==='v redu'?'V redu':'Poškodovano'}).eq('id',id).eq('vracilo_potrjeno',false).select('id');if(error)throw error;if(!data?.length)throw Error('Vračilo ni bilo posodobljeno.');msg('Vračilo potrjeno.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}}
 async function odjava(){try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];teams=[];monthEntries=[];yearEntries=[];toolEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';msg('Odjava uspešna.')}catch(e){msg('Napaka: '+e.message)}}

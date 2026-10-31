@@ -175,7 +175,7 @@ async function loadToolNames(){
   addOption('toolName','','Izberite orodje');
 
   const {data,error}=await db.from('orodja')
-    .select('id,naziv')
+    .select('id,naziv,fotografija')
     .order('naziv');
 
   if(error)throw error;

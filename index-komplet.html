@@ -108,13 +108,115 @@ function render(){const rows=selected(monthEntries),annual=selected(yearEntries)
 async function editEntry(id){if(!admin())return;const e=monthEntries.find(r=>String(r.id)===String(id));if(!e)return;const a=prompt('Začetek (HH:MM)',String(e.zacetek||'').slice(0,5));if(a===null)return;const b=prompt('Konec (HH:MM)',String(e.konec||'').slice(0,5));if(b===null)return;if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(a)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(b)||min(b)<=min(a))return alert('Neveljavne ure.');try{const {error}=await db.from('delovne_ure').update({zacetek:a+':00',konec:b+':00'}).eq('id',id);if(error)throw error;await refresh()}catch(err){alert('Napaka: '+err.message)}}
 function exportCSV(){const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek])),arr=selected(yearEntries).filter(e=>Number(e.datum.slice(5,7))===selectedMonth),monthly=new Map(),yearly=new Map();const data=[['Vrsta','Datum / mesec','Delavec','Začetek','Konec','Minute','Opomba']];for(const e of arr){const name=names.get(String(e.delavec_id))||'',d=duration(e);data.push(['Dnevno',e.datum,name,e.zacetek||'',e.konec||'',d??'',e.opomba||'']);if(d!==null){const k=name+'|'+e.datum.slice(0,7);monthly.set(k,(monthly.get(k)||0)+d)}}for(const e of selected(yearEntries)){const d=duration(e);if(d!==null){const name=names.get(String(e.delavec_id))||'';yearly.set(name,(yearly.get(name)||0)+d)}}for(const [key,n] of monthly){const i=key.lastIndexOf('|');data.push(['Mesečno',key.slice(i+1),key.slice(0,i),'','',n,''])}for(const [name,n] of yearly)data.push(['Letno',$('year').value,name,'','',n,'']);const csv='\ufeff'+data.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='SYLAJ-Evidenca-'+$('year').value+'-'+String(selectedMonth).padStart(2,'0')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
 async function loadTeams(){const q=admin()?db.from('ekipe').select('id,naziv,vodja_id').order('naziv'):db.from('ekipe').select('id,naziv,vodja_id').eq('vodja_id',user.id).order('naziv');const {data,error}=await q;if(error)throw error;teams=data||[];$('toolTeam').replaceChildren();teams.forEach(t=>addOption('toolTeam',t.id,t.naziv));for(const id of ['newWorkerTeam','filterTeam']){$(id).replaceChildren();if(id==='filterTeam')addOption(id,'','Vse ekipe');teams.forEach(t=>addOption(id,t.id,t.naziv))}await loadToolWorkers()}
-async function loadToolWorkers(){$('toolWorker').replaceChildren();const team=teams.find(t=>String(t.id)===$('toolTeam').value);if(!team)return;const {data,error}=await db.from('delavci').select('id,ime_priimek').eq('ekipa_id',team.id).eq('aktiven',true).order('ime_priimek');if(error){msg('Napaka: '+error.message,'toolMessage');return}(data||[]).forEach(w=>addOption('toolWorker',w.id,w.ime_priimek))}
-async function takeTool(){try{const name=$('toolName').value.trim(),qty=Number($('toolQty').value),team=teams.find(t=>String(t.id)===$('toolTeam').value),worker=$('toolWorker').value;if(!name||!Number.isInteger(qty)||qty<1||!team||!worker)throw Error('Izpolnite orodje, količino, ekipo in delavca.');$('takeTool').disabled=true;const {error}=await db.from('evidenca_orodja').insert({naziv_orodja:name,kolicina:qty,ekipa_id:team.id,delavec_id:Number(worker),prevzel_uid:user.id,stanje_ob_prevzemu:$('toolCondition').value,opombe:$('toolNote').value.trim()||null});if(error)throw error;$('toolName').value='';$('toolNote').value='';msg('Prevzem shranjen.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}finally{$('takeTool').disabled=false}}
+
+async function loadToolWorkers(){
+  $('toolWorker').replaceChildren();
+  const team=teams.find(t=>String(t.id)===$('toolTeam').value);
+  if(!team)return;
+  const {data,error}=await db.from('delavci')
+    .select('id,ime_priimek')
+    .eq('ekipa_id',team.id)
+    .eq('aktiven',true)
+    .order('ime_priimek');
+  if(error){
+    msg('Napaka: '+error.message,'toolMessage');
+    return;
+  }
+  (data||[]).forEach(w=>addOption('toolWorker',w.id,w.ime_priimek));
+}
+
+async function loadToolNames(){
+  const select=$('toolName');
+  select.replaceChildren();
+  addOption('toolName','','Izberite orodje');
+
+  const {data,error}=await db.from('orodja')
+    .select('id,naziv')
+    .order('naziv');
+
+  if(error)throw error;
+
+  (data||[]).forEach(t=>
+    addOption('toolName',t.id,t.naziv)
+  );
+}
+
+
+async function takeTool(){
+  try{
+    const toolId=Number($('toolName').value);
+    const qty=Number($('toolQty').value);
+    const team=teams.find(t=>String(t.id)===$('toolTeam').value);
+    const worker=$('toolWorker').value;
+
+    if(!toolId||!Number.isInteger(qty)||qty<1||!team||!worker)
+      throw Error('Izberite orodje, količino, ekipo in delavca.');
+
+    $('takeTool').disabled=true;
+
+    const {data:tool,error:toolError}=await db.from('orodja')
+      .select('id,naziv')
+      .eq('id',toolId)
+      .single();
+
+    if(toolError)throw toolError;
+
+    const {error}=await db.from('evidenca_orodja').insert({
+      orodje_id:tool.id,
+      naziv_orodja:tool.naziv,
+      kolicina:qty,
+      ekipa_id:team.id,
+      delavec_id:Number(worker),
+      prevzel_uid:user.id,
+      stanje_ob_prevzemu:$('toolCondition').value,
+      opombe:$('toolNote').value.trim()||null
+    });
+
+    if(error)throw error;
+
+    $('toolName').value='';
+    $('toolNote').value='';
+    msg('Prevzem shranjen.','toolMessage');
+    await refreshTools();
+  }catch(e){
+    msg('Napaka: '+e.message,'toolMessage');
+  }finally{
+    $('takeTool').disabled=false;
+  }
+}
+
 async function refreshTools(){if(!user)return;try{let q=db.from('evidenca_orodja').select('id,naziv_orodja,kolicina,ekipa_id,delavec_id,datum_prevzema,datum_vracila,vracilo_potrjeno,stanje_ob_prevzemu,stanje_ob_vracilu,opombe').order('datum_prevzema',{ascending:false}).limit(1000);if(!admin()){if(!teams.length){toolEntries=[];renderTools();return}q=q.in('ekipa_id',teams.map(t=>t.id))}const {data,error}=await q;if(error)throw error;toolEntries=data||[];renderTools()}catch(e){msg('Napaka pri branju orodja: '+e.message,'toolMessage')}}
 function renderTools(){const body=$('toolRows');body.replaceChildren();const tn=new Map(teams.map(t=>[String(t.id),t.naziv]));const wn=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));for(const e of toolEntries){const tr=document.createElement('tr');for(const v of [e.naziv_orodja,e.kolicina,tn.get(String(e.ekipa_id))||e.ekipa_id,wn.get(String(e.delavec_id))||e.delavec_id,e.datum_prevzema?new Date(e.datum_prevzema).toLocaleString('sl-SI'):'',e.stanje_ob_prevzemu||'',e.datum_vracila?new Date(e.datum_vracila).toLocaleString('sl-SI'):'—',e.stanje_ob_vracilu||'—',e.opombe||'']){const td=document.createElement('td');td.textContent=v;tr.append(td)}const td=document.createElement('td');if(e.vracilo_potrjeno)td.textContent='Potrjeno';else if(admin()){const b=document.createElement('button');b.textContent='Potrdi vračilo';b.onclick=()=>confirmToolReturn(e.id);td.append(b)}else td.textContent='Čaka na administratorja';tr.append(td);body.append(tr)}if(!toolEntries.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=10;td.textContent='Ni evidentiranega orodja.';tr.append(td);body.append(tr)}}
 async function confirmToolReturn(id){if(!admin())return;const e=toolEntries.find(x=>String(x.id)===String(id));if(!e||e.vracilo_potrjeno)return;const answer=prompt('Stanje ob vrnitvi: V redu ali Poškodovano','V redu');if(answer===null)return;const c=answer.trim().toLowerCase();if(!['v redu','poškodovano','poskodovano'].includes(c))return alert('Vnesite V redu ali Poškodovano.');if(!confirm('Potrdite vračilo: '+e.naziv_orodja+'?'))return;try{const now=new Date().toISOString();const {data,error}=await db.from('evidenca_orodja').update({datum_vracila:now,vracilo_potrjeno:true,potrjeno_uid:user.id,datum_potrditve:now,stanje_ob_vracilu:c==='v redu'?'V redu':'Poškodovano'}).eq('id',id).eq('vracilo_potrjeno',false).select('id');if(error)throw error;if(!data?.length)throw Error('Vračilo ni bilo posodobljeno.');msg('Vračilo potrjeno.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}}
 async function odjava(){try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];teams=[];monthEntries=[];yearEntries=[];toolEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';msg('Odjava uspešna.')}catch(e){msg('Napaka: '+e.message)}}
-$('loginBtn').onclick=prijava;$('logout').onclick=odjava;$('start').onclick=startWork;$('end').onclick=endWork;$('saveManual').onclick=saveManual;$('refresh').onclick=refresh;$('export').onclick=exportCSV;$('mode').onchange=switchMode;$('year').onchange=refresh;$('filterWorker').onchange=render;$('hoursTab').onclick=()=>showTab('hours');$('toolsTab').onclick=()=>showTab('tools');$('workersTab').onclick=()=>showTab('workers');$('addWorker').onclick=addWorker;$('reloadWorkers').onclick=reloadWorkers;$('filterTeam').onchange=render;$('toolTeam').onchange=loadToolWorkers;$('takeTool').onclick=takeTool;$('refreshTools').onclick=refreshTools;
+
+$('loginBtn').onclick=prijava;
+$('logout').onclick=odjava;
+$('start').onclick=startWork;
+$('end').onclick=endWork;
+$('saveManual').onclick=saveManual;
+$('refresh').onclick=refresh;
+$('export').onclick=exportCSV;
+$('mode').onchange=switchMode;
+$('year').onchange=refresh;
+$('filterWorker').onchange=render;
+$('hoursTab').onclick=()=>showTab('hours');
+$('toolsTab').onclick=async()=>{
+  showTab('tools');
+  try{
+    await loadToolNames();
+  }catch(e){
+    msg('Napaka pri nalaganju orodja: '+e.message,'toolMessage');
+  }
+};
+$('workersTab').onclick=()=>showTab('workers');
+$('addWorker').onclick=addWorker;
+$('reloadWorkers').onclick=reloadWorkers;
+$('filterTeam').onchange=render;
+$('toolTeam').onchange=loadToolWorkers;
+$('takeTool').onclick=takeTool;
+$('refreshTools').onclick=refreshTools;
+
 ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].forEach((name,i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>{selectedMonth=i+1;monthEntries=yearEntries.filter(e=>Number(e.datum.slice(5,7))===selectedMonth);render()};$('months').append(b)});
 $('workDate').value=date();$('year').value=new Date().getFullYear();
 

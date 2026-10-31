@@ -121,7 +121,7 @@
   </button>
 </div>
 
-<section id="sitesView" class="card">
+<section id="sitesView" class="card hidden">
   <h2>Gradbišča</h2>
 
   <label>Naziv gradbišča</label>
@@ -162,7 +162,14 @@ const admin=()=>['admin','administrator','skrbnik'].includes(role);
 const total=arr=>arr.reduce((n,e)=>n+(duration(e)??0),0);
 function addOption(id,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;$(id).append(o)}
 function switchMode(){$('automatic').classList.toggle('hidden',$('mode').value!=='auto');$('manual').classList.toggle('hidden',$('mode').value!=='manual')}
-function showTab(which){for(const x of ['hours','tools','workers']){$(x+'View').classList.toggle('hidden',which!==x);$(x+'Tab').classList.toggle('active',which===x)}if(which==='tools')refreshTools();if(which==='workers')renderWorkers()}
+function showTab(which){
+  for(const x of ['hours','tools','workers','sites']){
+    $(x+'View').classList.toggle('hidden',which!==x);
+    $(x+'Tab').classList.toggle('active',which===x);
+  }
+  if(which==='tools')refreshTools();
+  if(which==='workers')renderWorkers();
+}
 try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=window.supabase.createClient(SUPABASE_URL,KEY)}catch(e){msg('Napaka: '+e.message)}
 async function prijava(){if(!db)return msg('Supabase ni povezan.');const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return msg('Vnesite e-pošto in geslo.');$('loginBtn').disabled=true;msg('Prijavljanje ...');try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;user=data.user;const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;role=String(profile?.vloga||'').trim().toLowerCase();if(!['admin','administrator','skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');await loadTeams();await loadWorkers();$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;$('login').classList.add('hidden');$('app').classList.remove('hidden');msg('Prijava uspešna!');await refresh();renderWorkers()}catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}}
 async function loadWorkers(){const query=admin()?db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');const {data,error}=await query;if(error)throw error;workers=data||[];$('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');workers.forEach(w=>{if(w.aktiven)addOption('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));addOption('filterWorker',w.id,w.ime_priimek)});if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage')}

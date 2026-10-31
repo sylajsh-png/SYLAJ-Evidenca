@@ -558,6 +558,8 @@ $('toolTeam').onchange=loadToolWorkers;
 $('takeTool').onclick=takeTool;
 $('refreshTools').onclick=refreshTools;
 
+$('saveReturnPhotos').onclick = saveToolReturn;
+
 ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].forEach((name,i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>{selectedMonth=i+1;monthEntries=yearEntries.filter(e=>Number(e.datum.slice(5,7))===selectedMonth);render()};$('months').append(b)});
 $('workDate').value=date();$('year').value=new Date().getFullYear();
 

@@ -1075,6 +1075,11 @@ if (mapPoints.length > 0) {
       style="display:none;max-width:250px;width:100%;
       border-radius:10px;margin:10px 0">
 
+<button type="button" id="recognizeToolAI">
+  🤖 Prepoznaj orodje z AI
+</button>
+<p id="recognizeToolStatus"></p>
+
     <div class="row">
       <label>
         <span>Ime orodja *</span>
@@ -1138,6 +1143,48 @@ if (mapPoints.length > 0) {
     preview.src = previewUrl;
     preview.style.display = 'block';
   };
+
+$('recognizeToolAI').onclick = async () => {
+  const file = photo.files?.[0];
+  const status = $('recognizeToolStatus');
+
+  if (!file) {
+    status.textContent = 'Najprej fotografirajte orodje.';
+    return;
+  }
+
+  status.textContent = 'AI se nalaga, počakajte...';
+
+  try {
+    const { pipeline } = await import(
+      'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1'
+    );
+
+    const classifier = await pipeline(
+      'zero-shot-image-classification',
+      'Xenova/clip-vit-base-patch32'
+    );
+
+    const labels = [
+      'excavator', 'drill', 'hammer', 'screwdriver',
+      'angle grinder', 'chainsaw', 'concrete mixer',
+      'plate compactor', 'air compressor', 'generator',
+      'laser level', 'water pump', 'shovel', 'wrench'
+    ];
+
+    const result = await classifier(
+      URL.createObjectURL(file),
+      labels
+    );
+
+    if (result?.length) {
+      $('newToolName').value = result[0].label;
+      status.textContent = 'AI predlaga: ' + result[0].label;
+    }
+  } catch (e) {
+    status.textContent = 'Napaka AI: ' + e.message;
+  }
+};
 
   $('saveNewTool').onclick = async () => {
     if (!user || !admin()) return;

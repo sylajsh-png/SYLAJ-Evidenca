@@ -7,7 +7,71 @@
 <div id="hoursView"><section class="card"><h2>Vnos delovnih ur</h2><div class="row"><label><span>Delavec</span><select id="worker"></select></label><label><span>Način</span><select id="mode"><option value="auto">Samodejno</option><option value="manual">Ročno</option></select></label></div><div id="automatic"><button id="start">Začetek dela</button><button id="end">Konec dela</button></div><div id="manual" class="hidden"><div class="row"><label><span>Datum</span><input id="workDate" type="date"></label><label><span>Začetek</span><input id="startTime" type="time" value="07:00"></label><label><span>Konec</span><input id="endTime" type="time" value="15:00"></label><label><span>Opomba</span><input id="note"></label></div><button id="saveManual">Shrani ročno</button></div><p id="entryMessage" class="msg"></p></section>
 <section class="card"><h2>Pregled ur</h2><div class="row"><label><span>Leto</span><input type="number" id="year" min="2020" max="2100"></label><label><span>Delavec</span><select id="filterWorker"></select></label><label><span>Ekipa</span><select id="filterTeam"></select></label><button id="refresh">Osveži</button><button id="export" class="alt">Izvoz za Excel (CSV)</button></div><div id="months" class="months"></div><h3 id="monthTitle"></h3><div id="totals"></div><div id="teamTotals"></div><div class="scroll"><table><thead><tr><th>Datum</th><th>Delavec</th><th>Začetek</th><th>Konec</th><th>Ure</th><th>Opomba</th><th>Uredi</th></tr></thead><tbody id="rows"></tbody></table></div><small>Podatki prejšnjih let ostanejo shranjeni v bazi.</small></section></div>
 <div id="workersView" class="hidden"><section class="card"><h2>Upravljanje delavcev</h2><div class="row"><label><span>Ime in priimek</span><input id="newWorkerName" placeholder="Ime in priimek"></label><label><span>Ekipa</span><select id="newWorkerTeam"></select></label><button id="addWorker">+ Dodaj delavca</button></div><p id="workersMessage" class="msg"></p><h3>Seznam delavcev</h3><button id="reloadWorkers" class="alt">Osveži</button><div class="scroll"><table><thead><tr><th>Delavec</th><th>Ekipa</th><th>Status</th><th>Dejanje</th></tr></thead><tbody id="workerRows"></tbody></table></div><small>Odstranitev pomeni deaktivacijo; delovne ure se ne izbrišejo. Premestitev je dovoljena administratorju.</small></section></div>
-<div id="toolsView" class="hidden"><section class="card"><h2>Prevzem orodja</h2><div class="row"><label><span>Ekipa</span><select id="toolTeam"></select></label><label><span>Delavec</span><select id="toolWorker"></select></label><label><span>Orodje</span><input id="toolName" placeholder="Npr. žaba"></label><label><span>Količina</span><input id="toolQty" type="number" min="1" step="1" value="1"></label><label><span>Stanje ob prevzemu</span><select id="toolCondition"><option>V redu</option><option>Poškodovano</option></select></label><label><span>Opomba</span><input id="toolNote"></label></div><button id="takeTool">Shrani prevzem</button><p id="toolMessage" class="msg"></p></section><section class="card"><h2>Pregled orodja</h2><button id="refreshTools">Osveži</button><div class="scroll"><table><thead><tr><th>Orodje</th><th>Količina</th><th>Ekipa</th><th>Delavec</th><th>Prevzeto</th><th>Stanje ob prevzemu</th><th>Vrnjeno</th><th>Stanje ob vrnitvi</th><th>Opomba</th><th>Potrditev</th></tr></thead><tbody id="toolRows"></tbody></table></div></section></div></div>
+
+<div id="toolsView" class="hidden">
+  <section class="card">
+    <h2>Prevzem orodja</h2>
+    <div class="row">
+      <label>
+        <span>Ekipa</span>
+        <select id="toolTeam"></select>
+      </label>
+      <label>
+        <span>Delavec</span>
+        <select id="toolWorker"></select>
+      </label>
+      <label>
+        <span>Orodje – izberi iz seznama</span>
+        <select id="toolName">
+          <option value="">Izberite orodje</option>
+        </select>
+      </label>
+      <label>
+        <span>Količina</span>
+        <input id="toolQty" type="number" min="1" step="1" value="1">
+      </label>
+      <label>
+        <span>Stanje ob prevzemu</span>
+        <select id="toolCondition">
+          <option>V redu</option>
+          <option>Poškodovano</option>
+        </select>
+      </label>
+      <label>
+        <span>Opomba</span>
+        <input id="toolNote">
+      </label>
+    </div>
+    <button id="takeTool">Shrani prevzem</button>
+    <p id="toolMessage" class="msg"></p>
+  </section>
+
+  <section class="card">
+    <h2>Pregled orodja</h2>
+    <button id="refreshTools">Osveži</button>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Orodje</th>
+            <th>Količina</th>
+            <th>Ekipa</th>
+            <th>Delavec</th>
+            <th>Prevzeto</th>
+            <th>Stanje ob prevzemu</th>
+            <th>Vrnjeno</th>
+            <th>Stanje ob vrnitvi</th>
+            <th>Opomba</th>
+            <th>Potrditev</th>
+          </tr>
+        </thead>
+        <tbody id="toolRows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+</div>
+
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>

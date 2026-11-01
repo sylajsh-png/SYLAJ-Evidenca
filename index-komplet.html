@@ -206,6 +206,7 @@ for(const x of ['hours','tools','workers','sites','bager']){
   if(which==='tools')refreshTools();
   if(which==='workers')renderWorkers();
 }
+  $('bagerTab').addEventListener('click', () => showTab('bager'));
 try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=window.supabase.createClient(SUPABASE_URL,KEY)}catch(e){msg('Napaka: '+e.message)}
 async function prijava(){if(!db)return msg('Supabase ni povezan.');const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return msg('Vnesite e-pošto in geslo.');$('loginBtn').disabled=true;msg('Prijavljanje ...');try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;user=data.user;const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;role=String(profile?.vloga||'').trim().toLowerCase();if(!['admin','administrator','skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');await loadTeams();await loadWorkers();$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;$('login').classList.add('hidden');$('app').classList.remove('hidden');msg('Prijava uspešna!');await refresh();renderWorkers()}catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}}
 async function loadWorkers(){const query=admin()?db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');const {data,error}=await query;if(error)throw error;workers=data||[];$('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');workers.forEach(w=>{if(w.aktiven)addOption('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));addOption('filterWorker',w.id,w.ime_priimek)});if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage')}
@@ -1541,6 +1542,50 @@ $('sitesTab').addEventListener('click', async () => {
   await loadSites();
 });
 
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const $b = id => document.getElementById(id);
+  const bagerTab = $b('bagerTab');
+
+  async function loadBagerji() {
+    const select = $b('bagerSelect');
+    select.innerHTML = '<option value="">Izberi bager</option>';
+
+    const client = window.supabase.createClient(
+  'https://zofclcgkgwfsjrcewfml.supabase.co',
+  'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+);
+    if (!client) {
+      $b('bagerMessage').textContent =
+        'Povezava z bazo še ni pripravljena.';
+      return;
+    }
+
+    const { data, error } = await client
+      .from('bagerji')
+      .select('id,naziv')
+      .eq('aktivno', true)
+      .order('naziv');
+
+    if (error) {
+      $b('bagerMessage').textContent = error.message;
+      return;
+    }
+
+    for (const bager of data || []) {
+      const option = document.createElement('option');
+      option.value = bager.id;
+      option.textContent = bager.naziv;
+      select.appendChild(option);
+    }
+  }
+
+  bagerTab.addEventListener('click', loadBagerji);
 })();
 </script>
 

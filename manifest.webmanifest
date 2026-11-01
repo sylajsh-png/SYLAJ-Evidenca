@@ -8,8 +8,14 @@
   "theme_color": "#17212d",
   "icons": [
     {
-      "src": "./SYLAJ-Evidenca-logo-4-1.png",
-      "sizes": "any",
+      "src": "./sylaj-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./sylaj-icon-512-1.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }

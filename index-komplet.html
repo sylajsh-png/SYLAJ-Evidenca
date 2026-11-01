@@ -2910,4 +2910,23 @@ tab.addEventListener('click', (event) => {
 })();
 </script>
 
+<script>
+(() => {
+  const vozila = document.getElementById('vozilaTab');
+
+  ['hoursTab', 'toolsTab', 'workersTab', 'sitesTab', 'bagerTab']
+    .forEach(id => {
+      const button = document.getElementById(id);
+
+      if (button) {
+        button.addEventListener('click', () => {
+          vozila?.classList.remove('active');
+          document.getElementById('vozilaView')
+            ?.classList.add('hidden');
+        });
+      }
+    });
+})();
+</script>
+
 </body></html>

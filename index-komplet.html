@@ -141,6 +141,15 @@ SYLAJ d.o.o
   
 <section id="bagerView" class="card hidden">
   <h2>Bagerji – Evidenca strojev</h2>
+  <div class="card">
+  <h3>Upravljanje bagerjev</h3>
+  <label>Naziv bagerja
+    <input id="newBagerName" type="text"
+           placeholder="Npr. Yanmar VIO57">
+  </label>
+  <button id="addBager" type="button">Dodaj bager</button>
+  <p id="addBagerMessage" class="msg"></p>
+  </div>
   <div class="row">
     <label>Bager
       <select id="bagerSelect"></select>
@@ -1584,10 +1593,40 @@ $('sitesTab').addEventListener('click', async () => {
       select.appendChild(option);
     }
   }
+$b('addBager').addEventListener('click', async () => {
+  const naziv = $b('newBagerName').value.trim();
 
+  if (!naziv) {
+    $b('addBagerMessage').textContent =
+      'Vnesite naziv bagerja.';
+    return;
+  }
+
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const { error } = await client
+    .from('bagerji')
+    .insert({ naziv, aktivno: true });
+
+  if (error) {
+    $b('addBagerMessage').textContent =
+      'Napaka: ' + error.message;
+    return;
+  }
+
+  $b('newBagerName').value = '';
+  $b('addBagerMessage').textContent =
+    'Bager uspešno dodan.';
+
+  await loadBagerji();
+});
   bagerTab.addEventListener('click', async () => {
   for (const id of ['hoursView', 'toolsView', 'workersView', 'sitesView', 'ratingsView', 'gpsView']) {
     document.getElementById(id)?.classList.add('hidden');
+    
   }
   $b('bagerView').classList.remove('hidden');
   await loadBagerji();

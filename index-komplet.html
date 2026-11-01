@@ -136,6 +136,52 @@ SYLAJ d.o.o
 
   <h3>Moja gradbišča</h3>
   <div id="siteList"></div>
+
+<div class="card">
+  <h3>Dnevno poročilo del</h3>
+
+  <label>Gradbišče
+    <select id="reportSite"></select>
+  </label>
+
+  <label>Datum
+    <input id="reportDate" type="date">
+  </label>
+
+  <label>Opravljeno delo
+    <textarea id="reportWork"
+      placeholder="Kaj ste danes delali?"></textarea>
+  </label>
+
+  <label>Količina
+    <input id="reportQuantity" type="number" step="0.01">
+  </label>
+
+  <label>Enota
+    <select id="reportUnit">
+      <option value="m">m</option>
+      <option value="m2">m²</option>
+      <option value="m3">m³</option>
+      <option value="kos">kos</option>
+      <option value="ur">ur</option>
+    </select>
+  </label>
+
+  <label>Fotografije del
+    <input id="reportPhotos" type="file"
+      accept="image/*" multiple>
+  </label>
+
+  <button id="saveSiteReport" type="button">
+    Shrani poročilo
+  </button>
+
+  <p id="siteReportMessage" class="msg"></p>
+
+  <h3>Zgodovina opravljenih del</h3>
+  <div id="siteReportHistory"></div>
+</div>
+
 </section>
 </div>
   

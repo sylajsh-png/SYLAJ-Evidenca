@@ -2753,4 +2753,44 @@ $b('addBager').addEventListener('click', async () => {
 })();
 </script>
 
+<section id="vozilaView" class="card hidden">
+  <h2>🚐 Vozila – Evidenca</h2>
+
+  <div class="card">
+    <h3>Dodaj vozilo</h3>
+    <input id="voziloNaziv" placeholder="Naziv vozila">
+    <input id="voziloRegistracija" placeholder="Registrska številka">
+    <button type="button" id="dodajVozilo">Dodaj vozilo</button>
+    <div id="seznamVozil"></div>
+  </div>
+
+  <div class="card">
+    <h3>📸 Evidenca kilometrov</h3>
+    <select id="voziloKmIzbira"></select>
+    <input id="voziloKmFoto" type="file" accept="image/*" capture="environment">
+    <p>Fotografija števca kilometrov</p>
+    <button type="button" id="shraniVoziloKm">Shrani kilometre</button>
+  </div>
+
+  <div class="card">
+    <h3>⛽ Gorivo</h3>
+    <select id="voziloGorivoIzbira"></select>
+    <input id="voziloLitri" type="number" step="0.01" placeholder="Litri goriva">
+    <button type="button" id="shraniVoziloGorivo">Shrani gorivo</button>
+  </div>
+
+  <div class="card">
+    <h3>🧽 Čiščenje vozila</h3>
+    <select id="voziloCiscenjeIzbira"></select>
+    <input id="voziloCiscenjeFoto" type="file" accept="image/*" capture="environment" multiple>
+    <button type="button" id="shraniVoziloCiscenje">Potrdi čiščenje</button>
+    <div id="voziloCiscenjeStatus"></div>
+  </div>
+
+  <div class="card">
+    <h3>📊 Evidenca vozil</h3>
+    <div id="vozilaEvidenca"></div>
+  </div>
+</section>
+
 </body></html>

@@ -2522,4 +2522,235 @@ $b('addBager').addEventListener('click', async () => {
 })();
 </script>
 
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const yearEl = el('siteReportYear');
+  const monthEl = el('siteReportMonth');
+  const siteEl = el('siteReportFilter');
+  const output = el('siteMonthlyReport');
+  const csvBtn = el('siteReportCSV');
+
+  if (!yearEl || !monthEl || !siteEl || !output || !csvBtn) return;
+
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const months = [
+    'Januar', 'Februar', 'Marec', 'April',
+    'Maj', 'Junij', 'Julij', 'Avgust',
+    'September', 'Oktober', 'November', 'December'
+  ];
+
+  const currentYear = new Date().getFullYear();
+
+  for (let y = currentYear; y >= 2020; y--) {
+    const option = document.createElement('option');
+    option.value = String(y);
+    option.textContent = String(y);
+    yearEl.appendChild(option);
+  }
+
+  let allReports = [];
+  let sites = [];
+
+  const fmt = n => Number(n || 0).toLocaleString('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  async function loadSites() {
+    const { data, error } = await client
+      .from('gradbisca')
+      .select('id,naziv')
+      .order('naziv');
+
+    if (error) throw error;
+
+    sites = data || [];
+    siteEl.innerHTML = '<option value="">Vsa gradbišča</option>';
+
+    for (const site of sites) {
+      const option = document.createElement('option');
+      option.value = String(site.id);
+      option.textContent = site.naziv;
+      siteEl.appendChild(option);
+    }
+  }
+
+  async function loadReports() {
+    output.textContent = 'Nalaganje evidence...';
+
+    try {
+      const { data: auth } = await client.auth.getUser();
+
+      if (!auth.user) {
+        output.textContent = 'Za ogled evidence je potrebna prijava.';
+        return;
+      }
+
+      const year = Number(yearEl.value);
+      const start = year + '-01-01';
+      const end = (year + 1) + '-01-01';
+
+      let query = client
+        .from('raportet_gradbisca')
+        .select('gradbisce_id,datum,opis_dela,kolicina,enota')
+        .gte('datum', start)
+        .lt('datum', end)
+        .order('datum', { ascending: true });
+
+      if (siteEl.value) {
+        query = query.eq('gradbisce_id', Number(siteEl.value));
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      allReports = (data || []).filter(r => {
+        if (!monthEl.value) return true;
+        return Number(r.datum.slice(5, 7)) === Number(monthEl.value);
+      });
+
+      renderReport();
+    } catch (error) {
+      output.textContent = 'Napaka: ' + error.message;
+    }
+  }
+
+  function renderReport() {
+    output.replaceChildren();
+
+    if (!allReports.length) {
+      output.textContent = 'Za izbrano obdobje ni poročil.';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+
+    const header = document.createElement('tr');
+
+    for (const title of ['Datum', 'Gradbišče', 'Delo', 'Količina', 'Enota']) {
+      const th = document.createElement('th');
+      th.textContent = title;
+      th.style.padding = '8px 4px';
+      th.style.textAlign = 'left';
+      header.appendChild(th);
+    }
+
+    table.appendChild(header);
+
+    for (const r of allReports) {
+      const tr = document.createElement('tr');
+      const site = sites.find(s => String(s.id) === String(r.gradbisce_id));
+
+      const values = [
+        r.datum,
+        site?.naziv || String(r.gradbisce_id),
+        r.opis_dela || '',
+        r.kolicina == null ? '' : fmt(r.kolicina),
+        r.enota || ''
+      ];
+
+      for (const value of values) {
+        const td = document.createElement('td');
+        td.textContent = value;
+        td.style.padding = '8px 4px';
+        td.style.borderTop = '1px solid #ddd';
+        tr.appendChild(td);
+      }
+
+      table.appendChild(tr);
+    }
+
+    output.appendChild(table);
+
+    const summary = document.createElement('p');
+    summary.textContent = 'SKUPAJ POROČIL: ' + allReports.length;
+    output.appendChild(summary);
+
+    const totals = {};
+
+    for (const r of allReports) {
+      if (r.kolicina == null || !r.enota) continue;
+      const unit = r.enota;
+      totals[unit] = (totals[unit] || 0) + Number(r.kolicina);
+    }
+
+    for (const [unit, amount] of Object.entries(totals)) {
+      const p = document.createElement('p');
+      p.textContent = 'SKUPAJ ' + unit + ': ' + fmt(amount);
+      output.appendChild(p);
+    }
+  }
+
+  csvBtn.addEventListener('click', () => {
+    if (!allReports.length) {
+      alert('Ni podatkov za izvoz.');
+      return;
+    }
+
+    const quote = value =>
+      '"' + String(value ?? '').replace(/"/g, '""') + '"';
+
+    const rows = [
+      ['Datum', 'Gradbišče', 'Delo', 'Količina', 'Enota'],
+      ...allReports.map(r => {
+        const site = sites.find(s => String(s.id) === String(r.gradbisce_id));
+
+        return [
+          r.datum,
+          site?.naziv || r.gradbisce_id,
+          r.opis_dela,
+          r.kolicina ?? '',
+          r.enota
+        ];
+      })
+    ];
+
+    const csv = '\uFEFF' + rows
+      .map(row => row.map(quote).join(';'))
+      .join('\r\n');
+
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Gradbisca-evidenca-' + yearEl.value + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  yearEl.addEventListener('change', loadReports);
+  monthEl.addEventListener('change', loadReports);
+  siteEl.addEventListener('change', loadReports);
+
+  el('sitesTab')?.addEventListener('click', async () => {
+    try {
+      await loadSites();
+      await loadReports();
+    } catch (error) {
+      output.textContent = 'Napaka: ' + error.message;
+    }
+  });
+
+  loadSites()
+    .then(loadReports)
+    .catch(error => {
+      output.textContent = 'Napaka: ' + error.message;
+    });
+})();
+</script>
+
 </body></html>

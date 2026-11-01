@@ -1488,7 +1488,13 @@ $('addSite').addEventListener('click', async () => {
 });
 
 $('sitesTab').addEventListener('click', async () => {
-  showTab('sites');
+  for (const id of [
+    'hoursView', 'toolsView', 'workersView',
+    'ratingsView', 'gpsView'
+  ]) {
+    document.getElementById(id)?.classList.add('hidden');
+  }
+
   $('sitesView').classList.remove('hidden');
   await loadSites();
 });

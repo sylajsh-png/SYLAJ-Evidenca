@@ -2067,4 +2067,248 @@ $b('addBager').addEventListener('click', async () => {
 })();
 </script>
 
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const db = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const monthSelect = el('bagerDailyMonth');
+  const yearSelect = el('bagerReportYear');
+  const machineSelect = el('bagerReportMachine');
+  const report = el('bagerDailyReport');
+  const csvButton = el('bagerDailyCSV');
+
+  if (!monthSelect || !yearSelect || !machineSelect ||
+      !report || !csvButton) return;
+
+  monthSelect.value = String(new Date().getMonth() + 1);
+
+  let dailyRows = [];
+
+  const num = value => Number(value) || 0;
+  const fmt = value => num(value).toLocaleString('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  async function fetchAll(table, columns, start, end, machineId) {
+    let query = db.from(table)
+      .select(columns)
+      .gte('datum', start)
+      .lt('datum', end)
+      .order('datum', { ascending: true });
+
+    if (machineId) query = query.eq('bager_id', machineId);
+
+    const rows = [];
+
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await query.range(from, from + 999);
+      if (error) throw new Error(table + ': ' + error.message);
+      rows.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+
+    return rows;
+  }
+
+  async function loadDailyReport() {
+    const year = Number(yearSelect.value);
+    const month = Number(monthSelect.value);
+    const machineId = machineSelect.value;
+
+    if (!year || !month) return;
+
+    report.textContent = 'Nalaganje dnevne evidence...';
+    dailyRows = [];
+
+    const start = year + '-' + String(month).padStart(2, '0') + '-01';
+    const end = month === 12
+      ? (year + 1) + '-01-01'
+      : year + '-' + String(month + 1).padStart(2, '0') + '-01';
+
+    try {
+      const [hours, fuel, machines] = await Promise.all([
+        fetchAll(
+          'bager_ure',
+          'datum,bager_id,stanje_zacetek,stanje_konec,opravljene_ure',
+          start, end, machineId
+        ),
+        fetchAll(
+          'bager_gorivo',
+          'datum,bager_id,litri',
+          start, end, machineId
+        ),
+        db.from('bagerji').select('id,naziv')
+      ]);
+
+      if (machines.error) throw new Error(machines.error.message);
+
+      const names = new Map(
+        (machines.data || []).map(machine => [machine.id, machine.naziv])
+      );
+
+      const grouped = new Map();
+
+      function getRow(date, id) {
+        const key = date + '|' + id;
+
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            date,
+            machine: names.get(id) || 'Bager',
+            start: null,
+            end: null,
+            hours: 0,
+            fuel: 0
+          });
+        }
+
+        return grouped.get(key);
+      }
+
+      for (const entry of hours) {
+        const row = getRow(entry.datum, entry.bager_id);
+
+        if (entry.stanje_zacetek != null) {
+          row.start = row.start == null
+            ? num(entry.stanje_zacetek)
+            : Math.min(row.start, num(entry.stanje_zacetek));
+        }
+
+        if (entry.stanje_konec != null) {
+          row.end = row.end == null
+            ? num(entry.stanje_konec)
+            : Math.max(row.end, num(entry.stanje_konec));
+        }
+
+        row.hours += num(entry.opravljene_ure);
+      }
+
+      for (const entry of fuel) {
+        getRow(entry.datum, entry.bager_id).fuel += num(entry.litri);
+      }
+
+      dailyRows = [...grouped.values()].sort((a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.machine.localeCompare(b.machine)
+      );
+
+      if (!dailyRows.length) {
+        report.textContent = 'Za izbrani mesec ni vnosov.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+
+      const titles = [
+        'Datum', 'Bager', 'Začetek (h)',
+        'Konec (h)', 'Delo (h)', 'Gorivo (L)'
+      ];
+
+      const header = document.createElement('tr');
+
+      for (const title of titles) {
+        const th = document.createElement('th');
+        th.textContent = title;
+        th.style.padding = '7px 4px';
+        th.style.textAlign = 'left';
+        header.appendChild(th);
+      }
+
+      table.appendChild(header);
+
+      for (const row of dailyRows) {
+        const tr = document.createElement('tr');
+
+        const values = [
+          row.date,
+          row.machine,
+          row.start == null ? '—' : fmt(row.start),
+          row.end == null ? '—' : fmt(row.end),
+          fmt(row.hours),
+          fmt(row.fuel)
+        ];
+
+        for (const value of values) {
+          const td = document.createElement('td');
+          td.textContent = value;
+          td.style.padding = '7px 4px';
+          td.style.borderTop = '1px solid #ddd';
+          tr.appendChild(td);
+        }
+
+        table.appendChild(tr);
+      }
+
+      const total = document.createElement('p');
+      total.textContent =
+        'SKUPAJ: ' +
+        fmt(dailyRows.reduce((sum, row) => sum + row.hours, 0)) +
+        ' h | ' +
+        fmt(dailyRows.reduce((sum, row) => sum + row.fuel, 0)) +
+        ' L';
+
+      report.replaceChildren(table, total);
+
+    } catch (error) {
+      report.textContent = 'Napaka: ' + error.message;
+    }
+  }
+
+  csvButton.addEventListener('click', () => {
+    if (!dailyRows.length) {
+      alert('Ni podatkov za izvoz.');
+      return;
+    }
+
+    const lines = [
+      'Datum;Bager;Začetek (h);Konec (h);Delo (h);Gorivo (L)',
+      ...dailyRows.map(row => [
+        row.date,
+        row.machine,
+        row.start == null ? '' : fmt(row.start),
+        row.end == null ? '' : fmt(row.end),
+        fmt(row.hours),
+        fmt(row.fuel)
+      ].join(';'))
+    ];
+
+    const blob = new Blob(
+      ['\uFEFF' + lines.join('\r\n')],
+      { type: 'text/csv;charset=utf-8;' }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download =
+      'Bagerji-dnevna-' + yearSelect.value + '-' +
+      monthSelect.value + '.csv';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  monthSelect.addEventListener('change', loadDailyReport);
+  yearSelect.addEventListener('change', loadDailyReport);
+  machineSelect.addEventListener('change', loadDailyReport);
+
+  el('bagerTab')?.addEventListener('click', loadDailyReport);
+
+  loadDailyReport();
+})();
+</script>
+
 </body></html>

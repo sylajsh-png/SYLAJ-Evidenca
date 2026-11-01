@@ -2819,4 +2819,95 @@ tab.addEventListener('click', (event) => {
 })();
 </script>
 
+<script>
+(() => {
+  const el = id => document.getElementById(id);
+
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const naziv = el('voziloNaziv');
+  const registracija = el('voziloRegistracija');
+  const seznam = el('seznamVozil');
+
+  const izbire = [
+    el('voziloKmIzbira'),
+    el('voziloGorivoIzbira'),
+    el('voziloCiscenjeIzbira')
+  ];
+
+  async function naloziVozila() {
+    const { data, error } = await client
+      .from('vozila')
+      .select('id,naziv,registracija')
+      .order('naziv');
+
+    if (error) {
+      seznam.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    seznam.replaceChildren();
+
+    for (const izbira of izbire) {
+      izbira.replaceChildren();
+
+      const prazno = document.createElement('option');
+      prazno.value = '';
+      prazno.textContent = 'Izberite vozilo';
+      izbira.appendChild(prazno);
+    }
+
+    for (const vozilo of data || []) {
+      const ime = vozilo.naziv + ' (' + vozilo.registracija + ')';
+
+      const vrstica = document.createElement('p');
+      vrstica.textContent = ime;
+      seznam.appendChild(vrstica);
+
+      for (const izbira of izbire) {
+        const option = document.createElement('option');
+        option.value = vozilo.id;
+        option.textContent = ime;
+        izbira.appendChild(option);
+      }
+    }
+  }
+
+  el('dodajVozilo').addEventListener('click', async () => {
+    const ime = naziv.value.trim();
+    const tablica = registracija.value.trim().toUpperCase();
+
+    if (!ime || !tablica) {
+      alert('Vnesite naziv in registrsko številko.');
+      return;
+    }
+
+    const { error } = await client
+      .from('vozila')
+      .insert({
+        naziv: ime,
+        registracija: tablica
+      });
+
+    if (error) {
+      alert('Napaka: ' + error.message);
+      return;
+    }
+
+    naziv.value = '';
+    registracija.value = '';
+
+    await naloziVozila();
+    alert('Vozilo uspešno dodano.');
+  });
+
+  el('vozilaTab').addEventListener('click', naloziVozila);
+
+  naloziVozila();
+})();
+</script>
+
 </body></html>

@@ -3037,4 +3037,103 @@ tab.addEventListener('click', (event) => {
 })();
 </script>
 
+<script>
+(() => {
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const tabela = document.getElementById('vozilaEvidenca');
+  const tab = document.getElementById('vozilaTab');
+
+  async function prikaziEvidenco() {
+    tabela.textContent = 'Nalagam evidenco kilometrov...';
+
+    const [vozila, vnosi] = await Promise.all([
+      client.from('vozila').select('id,naziv,registracija'),
+      client.from('vozila_km')
+        .select('vozilo_id,datum,kilometri')
+        .order('datum', {ascending: true})
+        .order('id', {ascending: true})
+    ]);
+
+    if (vozila.error || vnosi.error) {
+      tabela.textContent = 'Napaka: ' +
+        (vozila.error?.message || vnosi.error?.message);
+      return;
+    }
+
+    const imena = new Map(
+      (vozila.data || []).map(v => [
+        v.id, v.naziv + ' (' + v.registracija + ')'
+      ])
+    );
+
+    const zadnjiKm = new Map();
+    const zapisi = (vnosi.data || []).map(v => {
+      const prejsnji = zadnjiKm.get(v.vozilo_id);
+      const razlika = prejsnji === undefined
+        ? 'Prvi vnos'
+        : (Number(v.kilometri) - prejsnji) + ' km';
+
+      zadnjiKm.set(v.vozilo_id, Number(v.kilometri));
+
+      return {
+        datum: v.datum,
+        vozilo: imena.get(v.vozilo_id) || v.vozilo_id,
+        kilometri: v.kilometri,
+        razlika
+      };
+    }).reverse();
+
+    tabela.replaceChildren();
+
+    if (!zapisi.length) {
+      tabela.textContent = 'Ni shranjenih kilometrov.';
+      return;
+    }
+
+    const pregled = document.createElement('div');
+    pregled.style.overflowX = 'auto';
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+
+    const head = document.createElement('tr');
+    ['Datum', 'Vozilo', 'Števec (km)', 'Prevoženo']
+      .forEach(naziv => {
+        const th = document.createElement('th');
+        th.textContent = naziv;
+        head.appendChild(th);
+      });
+    table.appendChild(head);
+
+    zapisi.forEach(v => {
+      const tr = document.createElement('tr');
+      [v.datum, v.vozilo, v.kilometri, v.razlika]
+        .forEach(podatek => {
+          const td = document.createElement('td');
+          td.textContent = podatek;
+          td.style.padding = '8px';
+          tr.appendChild(td);
+        });
+      table.appendChild(tr);
+    });
+
+    pregled.appendChild(table);
+    tabela.appendChild(pregled);
+  }
+
+  tab.addEventListener('click', prikaziEvidenco);
+
+  document.getElementById('shraniVoziloKm')
+    .addEventListener('click', () => {
+      setTimeout(prikaziEvidenco, 1500);
+    });
+
+  prikaziEvidenco();
+})();
+</script>
+
 </body></html>

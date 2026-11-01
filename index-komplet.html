@@ -138,6 +138,46 @@ SYLAJ d.o.o
   <div id="siteList"></div>
 </section>
 </div>
+  
+<section id="bagerView" class="card hidden">
+  <h2>Bagerji – Evidenca strojev</h2>
+  <div class="row">
+    <label>Bager
+      <select id="bagerSelect"></select>
+    </label>
+    <label>Datum
+      <input id="bagerDate" type="date">
+    </label>
+  </div>
+
+  <h3>Strojne ure</h3>
+  <div class="row">
+    <label>Začetno stanje (h)
+      <input id="bagerStart" type="number" step="0.1">
+    </label>
+    <label>Končno stanje (h)
+      <input id="bagerEnd" type="number" step="0.1">
+    </label>
+  </div>
+  <label>Fotografija števca
+    <input id="bagerPhoto" type="file" accept="image/*" capture="environment">
+  </label>
+
+  <h3>Gorivo</h3>
+  <label>Litri goriva
+    <input id="bagerFuel" type="number" step="0.01">
+  </label>
+
+  <button id="saveBager" type="button">Shrani evidenco</button>
+  <p id="bagerMessage" class="msg"></p>
+
+  <h3>Servisi</h3>
+  <div id="bagerServicePanel"></div>
+
+  <h3>Mesečna in letna evidenca</h3>
+  <div id="bagerReport"></div>
+</section>
+
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -159,7 +199,7 @@ const total=arr=>arr.reduce((n,e)=>n+(duration(e)??0),0);
 function addOption(id,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;$(id).append(o)}
 function switchMode(){$('automatic').classList.toggle('hidden',$('mode').value!=='auto');$('manual').classList.toggle('hidden',$('mode').value!=='manual')}
 function showTab(which){
-  for(const x of ['hours','tools','workers','sites']){
+for(const x of ['hours','tools','workers','sites','bager']){
     $(x+'View').classList.toggle('hidden',which!==x);
     $(x+'Tab').classList.toggle('active',which===x);
   }

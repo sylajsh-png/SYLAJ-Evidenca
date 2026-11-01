@@ -3175,120 +3175,547 @@ const db = window.supabase.createClient(
 })();
 </script>
   
+
 <script>
 (function () {
   'use strict';
 
+  const el = id => document.getElementById(id);
+
+  if (el('izmereTab')) return;
+
   const tab = document.createElement('button');
   tab.id = 'izmereTab';
   tab.textContent = '📐 Izmere';
-
-  document.getElementById('vozilaTab').after(tab);
+  el('vozilaTab').after(tab);
 
   const view = document.createElement('section');
   view.id = 'izmereView';
   view.className = 'card hidden';
 
   view.innerHTML = `
-    <h2>📐 Izmere – SYLAJ</h2>
-    <p>Meritve gradbenih del</p>
+    <h2>📐 Izmere – Obračun del</h2>
 
-    <label>Vrsta dela
-      <select id="izmeraVrsta">
-        <option value="kanal">Kanal (m)</option>
-        <option value="asfalt">Asfalt (m²)</option>
-        <option value="tlakovci">Tlakovci (m²)</option>
-        <option value="tampon">Tampon (m³)</option>
-      </select>
+    <div class="row">
+      <label>Gradbišče
+        <select id="izSite"></select>
+      </label>
+      <label>Ekipa
+        <select id="izTeam"></select>
+      </label>
+      <label>Datum
+        <input id="izDate" type="date">
+      </label>
+      <label>Segment št.
+        <input id="izSegment" type="number"
+          min="1" step="1" value="1">
+      </label>
+    </div>
+
+    <h3>Vrste del</h3>
+    <p>Izberite vse vrste del, opravljene
+       na istem segmentu.</p>
+
+    <label><input type="checkbox" id="izKanal">
+      📏 Kanal – m</label>
+    <label><input type="checkbox" id="izAsfalt">
+      🛣️ Asfalt – m²</label>
+    <label><input type="checkbox" id="izTlakovci">
+      🧱 Tlakovci – m²</label>
+    <label><input type="checkbox" id="izTampon">
+      🪨 Tampon – m³</label>
+
+    <div class="row">
+      <label>Dolžina (m)
+        <input id="izLength" type="number"
+          min="0" step="any">
+      </label>
+      <label>Širina (m)
+        <input id="izWidth" type="number"
+          min="0" step="any">
+      </label>
+      <label>Debelina (m)
+        <input id="izDepth" type="number"
+          min="0" step="any">
+      </label>
+    </div>
+
+    <small>
+      Za kanal se uporablja dolžina.
+      Za asfalt in tlakovce dolžina × širina.
+      Za tampon dolžina × širina × debelina.
+      Za različne širine vnesite ločene segmente.
+    </small>
+
+    <label>Opomba
+      <textarea id="izNote" rows="3"
+        placeholder="Opis del in posebnosti"></textarea>
     </label>
 
-    <label>Dolžina (m)
-      <input id="izmeraDolzina" type="number"
-        min="0" step="0.01">
-    </label>
-
-    <label>Širina (m)
-      <input id="izmeraSirina" type="number"
-        min="0" step="0.01">
-    </label>
-
-    <label>Debelina (m)
-      <input id="izmeraDebelina" type="number"
-        min="0" step="0.01">
-    </label>
-
-    <button id="izmeraIzracunaj">
-      Izračunaj
+    <button id="izCalculate" type="button">
+      🧮 Izračunaj
     </button>
 
-    <h3 id="izmeraRezultat">Količina: —</h3>
+    <div id="izPreview"></div>
 
-    <p id="izmeraMessage" class="msg"></p>
+    <button id="izSave" type="button">
+      💾 Shrani izmere
+    </button>
+
+    <p id="izMessage" class="msg"
+       role="status"></p>
+
+    <hr>
+
+    <h3>📋 Evidenca izmer</h3>
+    <button id="izReload" type="button">
+      🔄 Osveži
+    </button>
+    <button id="izCSV" type="button">
+      📊 Izvoz CSV (Excel)
+    </button>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Gradbišče</th>
+            <th>Ekipa</th>
+            <th>Segment</th>
+            <th>Delo</th>
+            <th>Količina</th>
+            <th>Status</th>
+            <th>Potrditev</th>
+          </tr>
+        </thead>
+        <tbody id="izRows"></tbody>
+      </table>
+    </div>
   `;
 
-  document.getElementById('app').append(view);
+  el('app').append(view);
+  el('izDate').value = date();
 
-  const el = id => document.getElementById(id);
+  const notice = text =>
+    el('izMessage').textContent = text;
+
+  const fmt = number =>
+    Number(number).toLocaleString('sl-SI', {
+      maximumFractionDigits: 3
+    });
+
+  const types = [
+    ['izKanal', 'kanal', 'm'],
+    ['izAsfalt', 'asfalt', 'm2'],
+    ['izTlakovci', 'tlakovci', 'm2'],
+    ['izTampon', 'tampon', 'm3']
+  ];
+
+  let sites = [];
+  let history = [];
+
+  function option(select, value, label) {
+    const item = document.createElement('option');
+    item.value = value;
+    item.textContent = label;
+    select.append(item);
+  }
+
+  async function loadChoices() {
+    if (!user) throw Error('Prijava je potrebna.');
+
+    const result = await db.from('gradbisca')
+      .select('id,naziv')
+      .order('naziv');
+
+    if (result.error) throw result.error;
+    sites = result.data || [];
+
+    const previousSite = el('izSite').value;
+    el('izSite').replaceChildren();
+    option(el('izSite'), '', 'Izberite gradbišče');
+
+    sites.forEach(s =>
+      option(el('izSite'), s.id, s.naziv)
+    );
+
+    if (sites.some(s =>
+      String(s.id) === previousSite
+    )) el('izSite').value = previousSite;
+
+    const previousTeam = el('izTeam').value;
+    el('izTeam').replaceChildren();
+    option(el('izTeam'), '', 'Izberite ekipo');
+
+    teams.forEach(t =>
+      option(el('izTeam'), t.id, t.naziv)
+    );
+
+    if (teams.some(t =>
+      String(t.id) === previousTeam
+    )) {
+      el('izTeam').value = previousTeam;
+    } else if (teams.length === 1) {
+      el('izTeam').value = teams[0].id;
+    }
+  }
 
   function calculate() {
-    const type = el('izmeraVrsta').value;
-    const length = Number(el('izmeraDolzina').value);
-    const width = Number(el('izmeraSirina').value);
-    const depth = Number(el('izmeraDebelina').value);
+    const length = Number(el('izLength').value);
+    const width = Number(el('izWidth').value);
+    const depth = Number(el('izDepth').value);
 
-    if (!Number.isFinite(length) || length <= 0) {
-      el('izmeraMessage').textContent =
-        'Vnesite veljavno dolžino.';
+    const selected = types.filter(
+      t => el(t[0]).checked
+    );
+
+    if (!selected.length)
+      throw Error('Izberite vsaj eno vrsto dela.');
+
+    if (!el('izLength').value ||
+        !Number.isFinite(length) || length <= 0)
+      throw Error('Vnesite veljavno dolžino.');
+
+    const rows = [];
+
+    for (const [checkbox, type, unit] of selected) {
+      let quantity = length;
+
+      if (unit === 'm2' || unit === 'm3') {
+        if (!el('izWidth').value ||
+            !Number.isFinite(width) || width <= 0)
+          throw Error('Vnesite veljavno širino.');
+
+        quantity *= width;
+      }
+
+      if (unit === 'm3') {
+        if (!el('izDepth').value ||
+            !Number.isFinite(depth) || depth <= 0)
+          throw Error('Vnesite veljavno debelino.');
+
+        quantity *= depth;
+      }
+
+      rows.push({
+        vrsta: type,
+        dolzina: length,
+        sirina: unit === 'm' ? null : width,
+        debelina: unit === 'm3' ? depth : null,
+        kolicina: Math.round(quantity * 1000) / 1000,
+        enota: unit
+      });
+    }
+
+    return rows;
+  }
+
+  function preview() {
+    try {
+      const rows = calculate();
+      el('izPreview').replaceChildren();
+
+      rows.forEach(r => {
+        const p = document.createElement('p');
+        p.textContent =
+          r.vrsta.toUpperCase() + ': ' +
+          fmt(r.kolicina) + ' ' +
+          r.enota.replace('m2', 'm²')
+            .replace('m3', 'm³');
+
+        el('izPreview').append(p);
+      });
+
+      notice('Izračun pripravljen. Za shranjevanje pritisnite Shrani izmere.');
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    }
+  }
+
+  async function save() {
+    const button = el('izSave');
+
+    try {
+      if (!user) throw Error('Prijava je potrebna.');
+
+      const team = teams.find(t =>
+        String(t.id) === el('izTeam').value
+      );
+
+      const site = sites.find(s =>
+        String(s.id) === el('izSite').value
+      );
+
+      if (!team || !site)
+        throw Error('Izberite gradbišče in ekipo.');
+
+      const datum = el('izDate').value;
+      if (!datum || datum > date())
+        throw Error('Preverite datum.');
+
+      const segment = Number(el('izSegment').value);
+      if (!Number.isSafeInteger(segment) || segment < 1)
+        throw Error('Neveljavna številka segmenta.');
+
+      const calculated = calculate();
+
+      if (!confirm(
+        'Shraniti ' + calculated.length +
+        ' izmer za gradbišče ' + site.naziv + '?'
+      )) return;
+
+      button.disabled = true;
+
+      const scanId = crypto.randomUUID();
+      const note = el('izNote').value.trim();
+
+      const payload = calculated.map(r => ({
+        ...r,
+        gradbisce_id: site.id,
+        ekipa_id: team.id,
+        vnesel_id: user.id,
+        datum,
+        segment_nr: segment,
+        skanim_id: scanId,
+        nacin: 'rocno',
+        burimi_matjes: 'rocno',
+        opomba: note || null
+      }));
+
+      const {error} = await db
+        .from('izmere')
+        .insert(payload);
+
+      if (error) throw error;
+
+      notice(
+        '✅ Shranjeno: ' +
+        calculated.length + ' izmer.'
+      );
+
+      el('izNote').value = '';
+      el('izPreview').replaceChildren();
+      types.forEach(t => el(t[0]).checked = false);
+      el('izSegment').value = String(segment + 1);
+
+      await loadHistory();
+
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function loadHistory() {
+    if (!user) return;
+
+    const body = el('izRows');
+    body.replaceChildren();
+    history = [];
+
+    let query = db.from('izmere')
+      .select('id,datum,gradbisce_id,ekipa_id,segment_nr,vrsta,kolicina,enota,status')
+      .order('datum', {ascending:false})
+      .order('id', {ascending:false})
+      .limit(500);
+
+    if (!admin()) {
+      if (!teams.length) return;
+      query = query.in(
+        'ekipa_id',
+        teams.map(t => t.id)
+      );
+    }
+
+    const {data,error} = await query;
+    if (error) {
+      notice('Napaka pri branju: ' + error.message);
       return;
     }
 
-    let quantity, unit;
+    history = data || [];
 
-    if (type === 'kanal') {
-      quantity = length;
-      unit = 'm';
-    } else if (type === 'asfalt' || type === 'tlakovci') {
-      if (width <= 0) {
-        el('izmeraMessage').textContent =
-          'Vnesite širino.';
-        return;
+    for (const r of history) {
+      const tr = document.createElement('tr');
+
+      const site = sites.find(s =>
+        String(s.id) === String(r.gradbisce_id)
+      );
+
+      const team = teams.find(t =>
+        String(t.id) === String(r.ekipa_id)
+      );
+
+      const values = [
+        r.datum,
+        site?.naziv || r.gradbisce_id,
+        team?.naziv || r.ekipa_id,
+        r.segment_nr ?? '—',
+        r.vrsta,
+        fmt(r.kolicina) + ' ' +
+          String(r.enota).replace('m2','m²')
+            .replace('m3','m³'),
+        r.status || 'V preverjanju'
+      ];
+
+      values.forEach(value => {
+        const td = document.createElement('td');
+        td.textContent = String(value ?? '');
+        tr.append(td);
+      });
+
+      const actions = document.createElement('td');
+
+      if (admin() && r.status !== 'potrjeno') {
+        const button = document.createElement('button');
+        button.textContent = '✅ Potrdi';
+        button.onclick = () => confirmMeasure(r.id);
+        actions.append(button);
+      } else {
+        actions.textContent =
+          r.status === 'potrjeno'
+            ? '✅ Potrjeno'
+            : 'Čaka na potrditev';
       }
-      quantity = length * width;
-      unit = 'm²';
-    } else {
-      if (width <= 0 || depth <= 0) {
-        el('izmeraMessage').textContent =
-          'Vnesite širino in debelino.';
-        return;
-      }
-      quantity = length * width * depth;
-      unit = 'm³';
+
+      tr.append(actions);
+      body.append(tr);
     }
 
-    el('izmeraRezultat').textContent =
-      'Količina: ' +
-      quantity.toLocaleString('sl-SI', {
-        maximumFractionDigits: 3
-      }) + ' ' + unit;
-
-    el('izmeraMessage').textContent =
-      'Predlog izračuna. Podatki še niso shranjeni.';
+    if (!history.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 8;
+      td.textContent = 'Ni shranjenih izmer.';
+      tr.append(td);
+      body.append(tr);
+    }
   }
 
-  el('izmeraIzracunaj').onclick = calculate;
+  async function confirmMeasure(id) {
+    if (!admin() || !user) return;
 
-  tab.onclick = () => {
+    if (!confirm('Potrdite to izmero?')) return;
+
+    try {
+      const {data,error} = await db
+        .from('izmere')
+        .update({
+          status: 'potrjeno',
+          potrjeno_od: user.id,
+          potrjeno_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .neq('status', 'potrjeno')
+        .select('id');
+
+      if (error) throw error;
+      if (!data?.length)
+        throw Error('Izmera ni bila posodobljena.');
+
+      notice('✅ Izmera potrjena.');
+      await loadHistory();
+
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    }
+  }
+
+  function exportCSV() {
+    if (!history.length) {
+      alert('Ni podatkov za izvoz.');
+      return;
+    }
+
+    const rows = [
+      ['Datum','Gradbišče','Ekipa','Segment',
+       'Delo','Količina','Enota','Status']
+    ];
+
+    history.forEach(r => {
+      rows.push([
+        r.datum,
+        sites.find(s =>
+          String(s.id) === String(r.gradbisce_id)
+        )?.naziv || r.gradbisce_id,
+        teams.find(t =>
+          String(t.id) === String(r.ekipa_id)
+        )?.naziv || r.ekipa_id,
+        r.segment_nr ?? '',
+        r.vrsta,
+        r.kolicina,
+        r.enota,
+        r.status || ''
+      ]);
+    });
+
+    const csv = '\uFEFF' + rows.map(row =>
+      row.map(value =>
+        '"' + String(value ?? '')
+          .replace(/"/g, '""') + '"'
+      ).join(';')
+    ).join('\r\n');
+
+    const url = URL.createObjectURL(
+      new Blob([csv], {
+        type: 'text/csv;charset=utf-8'
+      })
+    );
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'SYLAJ-Izmere-' + date() + '.csv';
+    a.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  el('izCalculate').onclick = preview;
+  el('izSave').onclick = save;
+  el('izReload').onclick = loadHistory;
+  el('izCSV').onclick = exportCSV;
+
+  // Ob preklopu na druge zavihke skrij Izmere.
+  document.querySelectorAll(
+    '#hoursTab,#toolsTab,#workersTab,#sitesTab,' +
+    '#bagerTab,#vozilaTab,#ratingsTab,#gpsTab'
+  ).forEach(button => {
+    button.addEventListener('click', () => {
+      view.classList.add('hidden');
+      tab.classList.remove('active');
+    });
+  });
+
+  tab.onclick = async () => {
+    if (!user) return;
+
     document.querySelectorAll(
       '#hoursView,#toolsView,#workersView,' +
       '#sitesView,#bagerView,#vozilaView,' +
       '#ratingsView,#gpsView,#izmereView'
-    ).forEach(x => x.classList.add('hidden'));
+    ).forEach(section =>
+      section.classList.add('hidden')
+    );
 
-    document.querySelectorAll('#app button.active')
-      .forEach(x => x.classList.remove('active'));
+    document.querySelectorAll(
+      '#hoursTab,#toolsTab,#workersTab,' +
+      '#sitesTab,#bagerTab,#vozilaTab,' +
+      '#ratingsTab,#gpsTab,#izmereTab'
+    ).forEach(button =>
+      button.classList.remove('active')
+    );
 
     view.classList.remove('hidden');
     tab.classList.add('active');
+
+    try {
+      await loadChoices();
+      await loadHistory();
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    }
   };
 })();
 </script>

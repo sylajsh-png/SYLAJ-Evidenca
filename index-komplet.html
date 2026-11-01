@@ -181,7 +181,57 @@ SYLAJ d.o.o
   <p id="bagerMessage" class="msg"></p>
 
   <h3>Servisi</h3>
-  <div id="bagerServicePanel"></div>
+  
+<div id="bagerServicePanel" class="card">
+  <h3>Dodaj servis</h3>
+
+  <label>Datum servisa
+    <input id="serviceDate" type="date">
+  </label>
+
+  <label>Stanje ur (h)
+    <input id="serviceHours" type="number" step="0.1">
+  </label>
+
+  <label>Vrsta servisa
+    <select id="serviceType">
+      <option value="">Izberi servis</option>
+      <option>Menjava olja</option>
+      <option>Menjava filtrov</option>
+      <option>Hidravlika</option>
+      <option>Motor</option>
+      <option>Redni servis</option>
+      <option>Popravilo</option>
+      <option>Drugo</option>
+    </select>
+  </label>
+
+  <label>Opis servisa
+    <textarea id="serviceDescription"></textarea>
+  </label>
+
+  <label>Stroški (€)
+    <input id="serviceCost" type="number" step="0.01">
+  </label>
+
+  <label>Naslednji servis (h)
+    <input id="serviceNextHours" type="number" step="0.1">
+  </label>
+
+  <label>Fotografija računa
+    <input id="serviceInvoice" type="file" accept="image/*">
+  </label>
+
+  <button id="saveService" type="button">
+    Shrani servis
+  </button>
+
+  <p id="serviceMessage" class="msg"></p>
+
+  <h3>Zgodovina servisov</h3>
+  <div id="serviceHistory"></div>
+</div>
+
 
   <h3>Mesečna in letna evidenca</h3>
   <div id="bagerReport"></div>
@@ -1631,6 +1681,108 @@ $b('addBager').addEventListener('click', async () => {
   $b('bagerView').classList.remove('hidden');
   await loadBagerji();
 });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const db = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const message = text => {
+    $('serviceMessage').textContent = text;
+  };
+
+  async function loadServices() {
+    const bagerId = $('bagerSelect').value;
+    const history = $('serviceHistory');
+    history.replaceChildren();
+
+    if (!bagerId) {
+      history.textContent = 'Najprej izberite bager.';
+      return;
+    }
+
+    const { data, error } = await db
+      .from('bager_servisi')
+      .select('datum,stanje_ur,vrsta_servisa,opis,stroski,naslednji_servis_ure')
+      .eq('bager_id', bagerId)
+      .order('datum', { ascending: false });
+
+    if (error) {
+      history.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    if (!data.length) {
+      history.textContent = 'Ni zabeleženih servisov.';
+      return;
+    }
+
+    for (const servis of data) {
+      const item = document.createElement('div');
+      item.className = 'card';
+
+      const lines = [
+        'Datum: ' + servis.datum,
+        'Ure: ' + (servis.stanje_ur ?? '—'),
+        'Servis: ' + (servis.vrsta_servisa || '—'),
+        'Opis: ' + (servis.opis || '—'),
+        'Stroški: ' + (servis.stroski ?? 0) + ' €',
+        'Naslednji servis: ' +
+          (servis.naslednji_servis_ure ?? '—') + ' h'
+      ];
+
+      item.textContent = lines.join(' | ');
+      history.appendChild(item);
+    }
+  }
+
+  $('saveService').addEventListener('click', async () => {
+    const bager_id = $('bagerSelect').value;
+    const datum = $('serviceDate').value;
+    const stanje = $('serviceHours').value;
+    const vrsta = $('serviceType').value;
+
+    if (!bager_id || !datum || !stanje || !vrsta) {
+      message('Izberite bager, datum, ure in vrsto servisa.');
+      return;
+    }
+
+    const { data: authData } = await db.auth.getUser();
+
+    const payload = {
+      bager_id,
+      datum,
+      stanje_ur: Number(stanje),
+      vrsta_servisa: vrsta,
+      opis: $('serviceDescription').value.trim(),
+      stroski: $('serviceCost').value
+        ? Number($('serviceCost').value) : null,
+      naslednji_servis_ure: $('serviceNextHours').value
+        ? Number($('serviceNextHours').value) : null,
+      vnesel_id: authData.user?.id
+    };
+
+    const { error } = await db
+      .from('bager_servisi')
+      .insert(payload);
+
+    if (error) {
+      message('Napaka: ' + error.message);
+      return;
+    }
+
+    message('Servis uspešno shranjen.');
+    await loadServices();
+  });
+
+  $('bagerSelect').addEventListener('change', loadServices);
 })();
 </script>
 

@@ -234,7 +234,26 @@ SYLAJ d.o.o
 
 
   <h3>Mesečna in letna evidenca</h3>
-  <div id="bagerReport"></div>
+  
+<div class="card">
+  <div class="row">
+    <label>Leto
+      <select id="bagerReportYear"></select>
+    </label>
+    <label>Bager
+      <select id="bagerReportMachine">
+        <option value="">Vsi bagerji</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="bagerReport">Nalaganje evidence...</div>
+
+  <button id="bagerReportCSV" type="button">
+    Prenesi CSV (Excel)
+  </button>
+</div>
+
 </section>
 
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">

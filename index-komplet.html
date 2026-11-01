@@ -2799,7 +2799,11 @@ $b('addBager').addEventListener('click', async () => {
 
   if (!tab || !view) return;
 
-  tab.addEventListener('click', () => {
+  
+tab.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
     document.querySelectorAll(
       '#hoursView, #toolsView, #workersView, #sitesView, #bagerView, #vozilaView'
     ).forEach(section => section.classList.add('hidden'));

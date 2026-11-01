@@ -3135,5 +3135,43 @@ tab.addEventListener('click', (event) => {
   prikaziEvidenco();
 })();
 </script>
+<script>
+(async function () {
+  const btn = document.getElementById('saveBager');
+  const msg = document.getElementById('bagerMessage');
 
+  if (!btn) return;
+
+  
+const db = window.supabase.createClient(
+  'https://zofclcgkwfsjrcewfml.supabase.co',
+  'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+);
+
+
+  btn.addEventListener('click', async () => {
+    const bager_id = document.getElementById('bagerSelect').value;
+    const datum = document.getElementById('bagerDate').value;
+    const start = Number(document.getElementById('bagerStart').value);
+    const end = Number(document.getElementById('bagerEnd').value);
+
+    if (!bager_id || !datum || end < start) {
+      msg.textContent = 'Preverite bager, datum in stanje ur.';
+      return;
+    }
+
+    const { error } = await db.from('bager_ure').insert({
+      bager_id,
+      datum,
+      stanje_zacetek: start,
+      stanje_konec: end,
+      opravljene_ure: end - start
+    });
+
+    msg.textContent = error
+      ? 'Napaka: ' + error.message
+      : 'Evidenca uspešno shranjena!';
+  });
+})();
+</script>
 </body></html>

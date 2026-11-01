@@ -1805,4 +1805,237 @@ $b('addBager').addEventListener('click', async () => {
 })();
 </script>
 
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const months = [
+    'Januar', 'Februar', 'Marec', 'April',
+    'Maj', 'Junij', 'Julij', 'Avgust',
+    'September', 'Oktober', 'November', 'December'
+  ];
+
+  const yearSelect = el('bagerReportYear');
+  const machineSelect = el('bagerReportMachine');
+  const report = el('bagerReport');
+  const csvButton = el('bagerReportCSV');
+
+  if (!yearSelect || !machineSelect || !report || !csvButton) return;
+
+  const currentYear = new Date().getFullYear();
+
+  for (let year = currentYear; year >= 2020; year--) {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    yearSelect.appendChild(option);
+  }
+
+  const number = value => Number(value) || 0;
+  const fmt = value => number(value).toLocaleString('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  let lastRows = [];
+
+  async function loadMachines() {
+    const { data, error } = await client
+      .from('bagerji')
+      .select('id,naziv')
+      .order('naziv');
+
+    if (error) {
+      report.textContent = 'Napaka pri nalaganju bagerjev: ' + error.message;
+      return false;
+    }
+
+    machineSelect.innerHTML = '<option value="">Vsi bagerji</option>';
+
+    for (const machine of data || []) {
+      const option = document.createElement('option');
+      option.value = machine.id;
+      option.textContent = machine.naziv;
+      machineSelect.appendChild(option);
+    }
+
+    return true;
+  }
+
+  async function loadReport() {
+    const year = Number(yearSelect.value);
+    const machineId = machineSelect.value;
+
+    report.textContent = 'Nalaganje evidence...';
+    lastRows = [];
+
+    const start = year + '-01-01';
+    const end = (year + 1) + '-01-01';
+
+    async function fetchRows(table, columns) {
+      let query = client
+        .from(table)
+        .select(columns)
+        .gte('datum', start)
+        .lt('datum', end);
+
+      if (machineId) query = query.eq('bager_id', machineId);
+
+      const all = [];
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await query.range(from, from + 999);
+
+        if (error) throw new Error(table + ': ' + error.message);
+
+        all.push(...(data || []));
+        if (!data || data.length < 1000) break;
+
+        from += 1000;
+      }
+
+      return all;
+    }
+
+    try {
+      const [hours, fuel, services] = await Promise.all([
+        fetchRows('bager_ure', 'datum,opravljene_ure'),
+        fetchRows('bager_gorivo', 'datum,litri'),
+        fetchRows('bager_servisi', 'datum,stroski')
+      ]);
+
+      const rows = months.map(month => ({
+        month,
+        hours: 0,
+        fuel: 0,
+        services: 0
+      }));
+
+      function monthIndex(date) {
+        return Number(String(date).slice(5, 7)) - 1;
+      }
+
+      for (const entry of hours) {
+        const index = monthIndex(entry.datum);
+        if (rows[index]) rows[index].hours += number(entry.opravljene_ure);
+      }
+
+      for (const entry of fuel) {
+        const index = monthIndex(entry.datum);
+        if (rows[index]) rows[index].fuel += number(entry.litri);
+      }
+
+      for (const entry of services) {
+        const index = monthIndex(entry.datum);
+        if (rows[index]) rows[index].services += number(entry.stroski);
+      }
+
+      const total = rows.reduce((sum, row) => ({
+        month: 'SKUPAJ LETO',
+        hours: sum.hours + row.hours,
+        fuel: sum.fuel + row.fuel,
+        services: sum.services + row.services
+      }), { hours: 0, fuel: 0, services: 0 });
+
+      lastRows = [...rows, total];
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+
+      const header = document.createElement('tr');
+
+      for (const title of ['Mesec', 'Ure (h)', 'Gorivo (L)', 'Servisi (€)']) {
+        const th = document.createElement('th');
+        th.textContent = title;
+        th.style.padding = '8px 4px';
+        th.style.textAlign = 'left';
+        header.appendChild(th);
+      }
+
+      table.appendChild(header);
+
+      for (const row of lastRows) {
+        const tr = document.createElement('tr');
+
+        if (row === total) tr.style.fontWeight = 'bold';
+
+        for (const value of [
+          row.month,
+          fmt(row.hours),
+          fmt(row.fuel),
+          fmt(row.services)
+        ]) {
+          const td = document.createElement('td');
+          td.textContent = value;
+          td.style.padding = '8px 4px';
+          td.style.borderTop = '1px solid #ddd';
+          tr.appendChild(td);
+        }
+
+        table.appendChild(tr);
+      }
+
+      report.replaceChildren(table);
+
+    } catch (error) {
+      report.textContent = 'Napaka: ' + error.message;
+    }
+  }
+
+  csvButton.addEventListener('click', () => {
+    if (!lastRows.length) {
+      alert('Najprej naložite evidenco.');
+      return;
+    }
+
+    const lines = [
+      'Mesec;Ure (h);Gorivo (L);Servisi (EUR)',
+      ...lastRows.map(row => [
+        row.month,
+        fmt(row.hours),
+        fmt(row.fuel),
+        fmt(row.services)
+      ].join(';'))
+    ];
+
+    const blob = new Blob(
+      ['\uFEFF' + lines.join('\r\n')],
+      { type: 'text/csv;charset=utf-8;' }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Bagerji-evidenca-' + yearSelect.value + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  yearSelect.addEventListener('change', loadReport);
+  machineSelect.addEventListener('change', loadReport);
+
+  el('bagerTab')?.addEventListener('click', async () => {
+    const selected = machineSelect.value;
+    if (await loadMachines()) {
+      machineSelect.value = selected;
+      await loadReport();
+    }
+  });
+
+  loadMachines().then(ok => {
+    if (ok) loadReport();
+  });
+})();
+</script>
+
 </body></html>

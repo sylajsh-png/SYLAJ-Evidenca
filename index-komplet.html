@@ -1,4 +1,4 @@
-
+ug
 <!doctype html><html lang="sl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SYLAJ-Evidenca</title><link rel="icon" href="SYLAJ-Evidenca-logo-4-1.png"><link rel="apple-touch-icon" href="SYLAJ-Evidenca-logo-4-1.png"><link rel="manifest" href="./manifest.webmanifest"><style>
 
 *{box-sizing:border-box}body{font:16px system-ui,Arial;background:#f3f6f9;color:#17212d;max-width:1100px;margin:auto;padding:16px}.card{background:white;border:1px solid #dce4ed;border-radius:12px;padding:18px;margin:14px 0}input,select,button{font:inherit;padding:10px;border:1px solid #bac9d6;border-radius:8px;max-width:100%}button{background:#17669a;color:white;border:0;cursor:pointer;margin:4px}button.alt{background:#566575}button.active{background:#124367}button:disabled{opacity:.5}label{display:flex;flex-direction:column;gap:5px;margin:6px}label span,small{color:#566575}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.hidden{display:none!important}.msg{white-space:pre-wrap;color:#8a3b12}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid #e2e7ee;padding:9px;text-align:left;white-space:nowrap}th{background:#eaf1f7}.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:5px}.months button{margin:0}
@@ -176,7 +176,39 @@ try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=wind
 async function prijava(){if(!db)return msg('Supabase ni povezan.');const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return msg('Vnesite e-pošto in geslo.');$('loginBtn').disabled=true;msg('Prijavljanje ...');try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;user=data.user;const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;role=String(profile?.vloga||'').trim().toLowerCase();if(!['admin','administrator','skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');await loadTeams();await loadWorkers();$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;$('login').classList.add('hidden');$('app').classList.remove('hidden');msg('Prijava uspešna!');await refresh();renderWorkers()}catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}}
 async function loadWorkers(){const query=admin()?db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');const {data,error}=await query;if(error)throw error;workers=data||[];$('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');workers.forEach(w=>{if(w.aktiven)addOption('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));addOption('filterWorker',w.id,w.ime_priimek)});if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage')}
 function workerId(){const id=$('worker').value;if(!workers.some(w=>String(w.id)===id))throw Error('Izberite delavca.');if(!workers.find(w=>String(w.id)===id)?.aktiven)throw Error('Delavec ni aktiven.');return id}
-async function insertEntry(payload){const {error}=await db.from('delovne_ure').insert({...payload,vnesel_id:user.id});if(error)throw error}
+
+async function insertEntry(payload) {
+  const worker = workers.find(
+    w => String(w.id) === String(payload.delavec_id)
+  );
+
+  if (!worker) {
+    throw Error('Delavec ni najden.');
+  }
+
+  const { data: active, error: activeError } = await db
+    .from('aktivna_gradbisca')
+    .select('gradbisce_id')
+    .eq('ekipa_id', worker.ekipa_id)
+    .maybeSingle();
+
+  if (activeError) throw activeError;
+
+  if (!active?.gradbisce_id) {
+    throw Error('Najprej izberite aktivno gradbišče.');
+  }
+
+  const { error } = await db
+    .from('delovne_ure')
+    .insert({
+      ...payload,
+      vnesel_id: user.id,
+      gradbisce_id: active.gradbisce_id
+    });
+
+  if (error) throw error;
+}
+
 async function startWork(){try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum);if(error)throw error;if((data||[]).some(e=>e.zacetek&&!e.konec))throw Error('Delo je za danes že začeto.');await insertEntry({delavec_id:id,datum,zacetek:clock(now),konec:null});msg('Začetek dela shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
 async function endWork(){try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum).order('id',{ascending:false});if(error)throw error;const open=(data||[]).find(e=>e.zacetek&&!e.konec);if(!open)throw Error('Za danes ni odprtega začetka dela.');const {error:ue}=await db.from('delovne_ure').update({konec:clock(now)}).eq('id',open.id);if(ue)throw ue;msg('Konec dela shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
 async function saveManual(){try{const id=workerId(),datum=$('workDate').value,zacetek=$('startTime').value,konec=$('endTime').value,opomba=$('note').value.trim();if(!datum||!zacetek||!konec)throw Error('Vnesite datum, začetek in konec.');if(min(konec)<=min(zacetek))throw Error('Konec mora biti po začetku.');await insertEntry({delavec_id:id,datum,zacetek,konec,opomba:opomba||null});msg('Ročni vnos shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}

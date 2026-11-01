@@ -2931,4 +2931,110 @@ tab.addEventListener('click', (event) => {
 })();
 </script>
 
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  $('shraniVoziloKm').addEventListener('click', async () => {
+    const voziloId = $('voziloKmIzbira').value;
+    const foto = $('voziloKmFoto').files[0];
+
+    if (!voziloId || !foto) {
+      alert('Izberite vozilo in fotografirajte števec.');
+      return;
+    }
+
+    const gumb = $('shraniVoziloKm');
+    gumb.disabled = true;
+    gumb.textContent = 'Berem kilometre...';
+
+    try {
+      if (!window.Tesseract) {
+        throw new Error('OCR knjižnica ni naložena.');
+      }
+
+      const rezultat = await Tesseract.recognize(foto, 'eng');
+      const besedilo = rezultat.data.text || '';
+      const stevilke = besedilo.match(/\d[\d\s.,]*/g) || [];
+      const predlog = stevilke
+        .map(x => x.replace(/[^\d]/g, ''))
+        .filter(Boolean)
+        .sort((a, b) => b.length - a.length)[0] || '';
+
+      const vnos = prompt(
+        'Preverite kilometre na fotografiji in potrdite:',
+        predlog
+      );
+
+      if (vnos === null) return;
+
+      const km = Number(vnos.trim().replace(/\s/g, '').replace(',', '.'));
+
+      if (!vnos.trim() || !Number.isFinite(km) || km < 0) {
+        alert('Neveljavno število kilometrov.');
+        return;
+      }
+
+      const {data: seja} = await client.auth.getUser();
+      const uporabnik = seja?.user;
+      if (!uporabnik) throw new Error('Prijava je potrebna.');
+
+      const danes = new Date();
+      const datum = [
+        danes.getFullYear(),
+        String(danes.getMonth() + 1).padStart(2, '0'),
+        String(danes.getDate()).padStart(2, '0')
+      ].join('-');
+
+      const {data: prejsnji, error: napakaBranja} = await client
+        .from('vozila_km')
+        .select('datum,kilometri')
+        .eq('vozilo_id', voziloId)
+        .lt('datum', datum)
+        .order('datum', {ascending: false})
+        .limit(1);
+
+      if (napakaBranja) throw napakaBranja;
+
+      const zadnji = prejsnji?.[0];
+      if (zadnji && km < Number(zadnji.kilometri)) {
+        alert('Kilometri so manjši od prejšnjega stanja.');
+        return;
+      }
+
+      const {error} = await client.from('vozila_km').insert({
+        vozilo_id: Number(voziloId),
+        datum,
+        kilometri: km,
+        vnesel_id: uporabnik.id
+      });
+
+      if (error) throw error;
+
+      const razlika = zadnji
+        ? km - Number(zadnji.kilometri)
+        : null;
+
+      alert(
+        'Kilometri shranjeni: ' + km +
+        (razlika === null
+          ? '\nPrvi vnos.'
+          : '\nOd prejšnjega vnosa: ' + razlika + ' km.')
+      );
+
+      $('voziloKmFoto').value = '';
+    } catch (napaka) {
+      alert('Napaka: ' + napaka.message);
+    } finally {
+      gumb.disabled = false;
+      gumb.textContent = 'Shrani kilometre';
+    }
+  });
+})();
+</script>
+
 </body></html>

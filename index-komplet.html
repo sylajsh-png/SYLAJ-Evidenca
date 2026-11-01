@@ -3293,4 +3293,74 @@ const db = window.supabase.createClient(
 })();
 </script>
 
+<script>
+(() => {
+  const icons = {
+    hoursTab: '👷',
+    toolsTab: '🛠️',
+    workersTab: '👥',
+    sitesTab: '🏗️',
+    bagerTab: '🚜',
+    vozilaTab: '🚐',
+    ratingsTab: '⭐',
+    gpsTab: '📍',
+    izmereTab: '📐',
+    loginBtn: '🔐',
+    logout: '🚪',
+    start: '▶️',
+    end: '⏹️',
+    saveManual: '💾',
+    refresh: '🔄',
+    export: '📊',
+    addWorker: '➕',
+    reloadWorkers: '🔄',
+    takeTool: '🛠️',
+    refreshTools: '🔄',
+    saveReturnPhotos: '📸',
+    addSite: '🏗️',
+    saveSiteReport: '📝',
+    siteReportCSV: '📊',
+    addBager: '🚜',
+    saveBager: '💾',
+    saveService: '🔧',
+    bagerReportCSV: '📊',
+    bagerDailyCSV: '📊',
+    dodajVozilo: '🚐',
+    shraniVoziloKm: '🛣️',
+    shraniVoziloGorivo: '⛽',
+    shraniVoziloCiscenje: '🧽',
+    izmeraIzracunaj: '🧮',
+    ratingSave: '⭐',
+    ratingReload: '🔄',
+    gpsStart: '▶️',
+    gpsStop: '⏹️',
+    gpsRefresh: '🔄',
+    gpsMapRefresh: '🗺️',
+    saveNewTool: '💾',
+    recognizeToolAI: '🤖'
+  };
+
+  function applyIcons() {
+    for (const [id, icon] of Object.entries(icons)) {
+      const button = document.getElementById(id);
+      if (!button || button.dataset.iconAdded) continue;
+
+      button.textContent = icon + ' ' +
+        button.textContent.replace(
+          /^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,
+          ''
+        ).trim();
+
+      button.dataset.iconAdded = 'true';
+    }
+  }
+
+  applyIcons();
+  new MutationObserver(applyIcons).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+})();
+</script>
+
 </body></html>

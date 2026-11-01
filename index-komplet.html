@@ -1585,7 +1585,13 @@ $('sitesTab').addEventListener('click', async () => {
     }
   }
 
-  bagerTab.addEventListener('click', loadBagerji);
+  bagerTab.addEventListener('click', async () => {
+  for (const id of ['hoursView', 'toolsView', 'workersView', 'sitesView', 'ratingsView', 'gpsView']) {
+    document.getElementById(id)?.classList.add('hidden');
+  }
+  $b('bagerView').classList.remove('hidden');
+  await loadBagerji();
+});
 })();
 </script>
 

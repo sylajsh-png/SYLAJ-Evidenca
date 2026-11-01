@@ -1392,15 +1392,14 @@ if (fotoFile) {
     } finally {
       btn.disabled = false;
     }
-  };
-
+  
 async function loadSites() {
   const list = $('siteList');
   list.textContent = 'Nalaganje...';
 
-  const { data, error } = await db
+  const { data: sites, error } = await db
     .from('gradbisca')
-    .select('id,naziv,naslov,created_by')
+    .select('id,naziv,naslov')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -1408,13 +1407,63 @@ async function loadSites() {
     return;
   }
 
+  const { data: active, error: activeError } = await db
+    .from('aktivna_gradbisca')
+    .select('ekipa_id,gradbisce_id');
+
+  if (activeError) {
+    list.textContent = 'Napaka: ' + activeError.message;
+    return;
+  }
+
   list.replaceChildren();
 
-  for (const site of data || []) {
-    const item = document.createElement('p');
-    item.textContent = site.naziv +
-      (site.naslov ? ' - ' + site.naslov : '');
-    list.appendChild(item);
+  for (const team of teams) {
+    const heading = document.createElement('h3');
+    heading.textContent = team.naziv;
+    list.append(heading);
+
+    const current = (active || []).find(
+      a => String(a.ekipa_id) === String(team.id)
+    );
+
+    for (const site of sites || []) {
+      const p = document.createElement('p');
+      const isActive =
+        String(current?.gradbisce_id) === String(site.id);
+
+      p.textContent = site.naziv +
+        (site.naslov ? ' – ' + site.naslov : '') +
+        (isActive ? ' ✅ AKTIVNO' : ' ');
+
+      if (!isActive) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Aktiviraj';
+        btn.onclick = async () => {
+          btn.disabled = true;
+          const { error: saveError } = await db
+            .from('aktivna_gradbisca')
+            .upsert({
+              ekipa_id: team.id,
+              gradbisce_id: site.id,
+              posodobljeno: new Date().toISOString()
+            }, { onConflict: 'ekipa_id' });
+
+          if (saveError) {
+            msg('Napaka: ' + saveError.message, 'siteMessage');
+            btn.disabled = false;
+            return;
+          }
+
+          msg('Aktivno gradbišče: ' + site.naziv,
+              'siteMessage');
+          await loadSites();
+        };
+        p.append(btn);
+      }
+
+      list.append(p);
+    }
   }
 }
 

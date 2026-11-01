@@ -2357,4 +2357,127 @@ $b('addBager').addEventListener('click', async () => {
 })();
 </script>
 
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const site = el('reportSite');
+  const date = el('reportDate');
+  const work = el('reportWork');
+  const quantity = el('reportQuantity');
+  const unit = el('reportUnit');
+  const message = el('siteReportMessage');
+  const history = el('siteReportHistory');
+
+  if (!site || !date || !work || !history) return;
+
+  date.value = new Date().toLocaleDateString('en-CA');
+
+  let sites = [];
+
+  async function loadSites() {
+    const {data: auth} = await client.auth.getUser();
+    if (!auth.user) return;
+
+    const {data, error} = await client
+      .from('gradbisca')
+      .select('id,naziv,naslov')
+      .order('naziv');
+
+    if (error) {
+      message.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    sites = data || [];
+    site.replaceChildren();
+
+    for (const s of sites) {
+      const option = document.createElement('option');
+      option.value = s.id;
+      option.textContent = s.naziv;
+      site.appendChild(option);
+    }
+
+    await loadHistory();
+  }
+
+  async function loadHistory() {
+    history.replaceChildren();
+    if (!site.value) return;
+
+    const {data, error} = await client
+      .from('raportet_gradbisca')
+      .select('datum,opis_dela,kolicina,enota')
+      .eq('gradbisce_id', site.value)
+      .order('datum', {ascending:false});
+
+    if (error) {
+      history.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    if (!data.length) {
+      history.textContent = 'Ni poročil.';
+      return;
+    }
+
+    for (const r of data) {
+      const item = document.createElement('div');
+      item.className = 'card';
+      item.textContent =
+        r.datum + ' | ' + r.opis_dela + ' | ' +
+        (r.kolicina ?? '') + ' ' + (r.enota || '');
+      history.appendChild(item);
+    }
+  }
+
+  el('saveSiteReport').addEventListener('click', async () => {
+    if (!site.value || !date.value || !work.value.trim()) {
+      message.textContent = 'Izpolnite obvezna polja.';
+      return;
+    }
+
+    const {data: auth} = await client.auth.getUser();
+    if (!auth.user) {
+      message.textContent = 'Prijava je potrebna.';
+      return;
+    }
+
+    const {error} = await client
+      .from('raportet_gradbisca')
+      .insert({
+        gradbisce_id: Number(site.value),
+        datum: date.value,
+        opis_dela: work.value.trim(),
+        kolicina: quantity.value
+          ? Number(quantity.value) : null,
+        enota: unit.value,
+        vnesel_id: auth.user.id
+      });
+
+    if (error) {
+      message.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    message.textContent = 'Poročilo shranjeno.';
+    work.value = '';
+    quantity.value = '';
+    await loadHistory();
+  });
+
+  site.addEventListener('change', loadHistory);
+  el('sitesTab')?.addEventListener('click', loadSites);
+
+  loadSites();
+})();
+</script>
+
 </body></html>

@@ -3174,4 +3174,123 @@ const db = window.supabase.createClient(
   });
 })();
 </script>
+  
+<script>
+(function () {
+  'use strict';
+
+  const tab = document.createElement('button');
+  tab.id = 'izmereTab';
+  tab.textContent = '📐 Izmere';
+
+  document.getElementById('vozilaTab').after(tab);
+
+  const view = document.createElement('section');
+  view.id = 'izmereView';
+  view.className = 'card hidden';
+
+  view.innerHTML = `
+    <h2>📐 Izmere – SYLAJ</h2>
+    <p>Meritve gradbenih del</p>
+
+    <label>Vrsta dela
+      <select id="izmeraVrsta">
+        <option value="kanal">Kanal (m)</option>
+        <option value="asfalt">Asfalt (m²)</option>
+        <option value="tlakovci">Tlakovci (m²)</option>
+        <option value="tampon">Tampon (m³)</option>
+      </select>
+    </label>
+
+    <label>Dolžina (m)
+      <input id="izmeraDolzina" type="number"
+        min="0" step="0.01">
+    </label>
+
+    <label>Širina (m)
+      <input id="izmeraSirina" type="number"
+        min="0" step="0.01">
+    </label>
+
+    <label>Debelina (m)
+      <input id="izmeraDebelina" type="number"
+        min="0" step="0.01">
+    </label>
+
+    <button id="izmeraIzracunaj">
+      Izračunaj
+    </button>
+
+    <h3 id="izmeraRezultat">Količina: —</h3>
+
+    <p id="izmeraMessage" class="msg"></p>
+  `;
+
+  document.getElementById('app').append(view);
+
+  const el = id => document.getElementById(id);
+
+  function calculate() {
+    const type = el('izmeraVrsta').value;
+    const length = Number(el('izmeraDolzina').value);
+    const width = Number(el('izmeraSirina').value);
+    const depth = Number(el('izmeraDebelina').value);
+
+    if (!Number.isFinite(length) || length <= 0) {
+      el('izmeraMessage').textContent =
+        'Vnesite veljavno dolžino.';
+      return;
+    }
+
+    let quantity, unit;
+
+    if (type === 'kanal') {
+      quantity = length;
+      unit = 'm';
+    } else if (type === 'asfalt' || type === 'tlakovci') {
+      if (width <= 0) {
+        el('izmeraMessage').textContent =
+          'Vnesite širino.';
+        return;
+      }
+      quantity = length * width;
+      unit = 'm²';
+    } else {
+      if (width <= 0 || depth <= 0) {
+        el('izmeraMessage').textContent =
+          'Vnesite širino in debelino.';
+        return;
+      }
+      quantity = length * width * depth;
+      unit = 'm³';
+    }
+
+    el('izmeraRezultat').textContent =
+      'Količina: ' +
+      quantity.toLocaleString('sl-SI', {
+        maximumFractionDigits: 3
+      }) + ' ' + unit;
+
+    el('izmeraMessage').textContent =
+      'Predlog izračuna. Podatki še niso shranjeni.';
+  }
+
+  el('izmeraIzracunaj').onclick = calculate;
+
+  tab.onclick = () => {
+    document.querySelectorAll(
+      '#hoursView,#toolsView,#workersView,' +
+      '#sitesView,#bagerView,#vozilaView,' +
+      '#ratingsView,#gpsView,#izmereView'
+    ).forEach(x => x.classList.add('hidden'));
+
+    document.querySelectorAll('#app button.active')
+      .forEach(x => x.classList.remove('active'));
+
+    view.classList.remove('hidden');
+    tab.classList.add('active');
+  };
+})();
+</script>
+
 </body></html>

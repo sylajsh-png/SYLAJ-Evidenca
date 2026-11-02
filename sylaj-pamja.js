@@ -159,7 +159,7 @@
   setTimeout(() => {
     splash.style.opacity = '0';
     setTimeout(() => splash.remove(), 250);
-  }, 1000);
+  }, 3500);
 
   function updateLogin() {
     nav.style.display = loggedIn() ? 'grid' : 'none';

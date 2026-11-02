@@ -1,0 +1,3992 @@
+<!doctype html><html lang="sl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SYLAJ-Evidenca</title><link rel="icon" href="SYLAJ-Evidenca-logo-4-1.png"><link rel="apple-touch-icon" href="SYLAJ-Evidenca-logo-4-1.png"><link rel="manifest" href="./manifest.webmanifest"><style>
+
+*{box-sizing:border-box}body{font:16px system-ui,Arial;background:#f3f6f9;color:#17212d;max-width:1100px;margin:auto;padding:16px}.card{background:white;border:1px solid #dce4ed;border-radius:12px;padding:18px;margin:14px 0}input,select,button{font:inherit;padding:10px;border:1px solid #bac9d6;border-radius:8px;max-width:100%}button{background:#17669a;color:white;border:0;cursor:pointer;margin:4px}button.alt{background:#566575}button.active{background:#124367}button:disabled{opacity:.5}label{display:flex;flex-direction:column;gap:5px;margin:6px}label span,small{color:#566575}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.hidden{display:none!important}.msg{white-space:pre-wrap;color:#8a3b12}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid #e2e7ee;padding:9px;text-align:left;white-space:nowrap}th{background:#eaf1f7}.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:5px}.months button{margin:0}
+
+/* SYLAJ modern dashboard – original data modules remain intact */
+body{max-width:1350px;background:radial-gradient(ellipse at 85% 0%,#d2e8ff 0,transparent 40%),linear-gradient(160deg,#edf5ff,#f4f7fc 55%,#e5effa);min-height:100vh;color:#142b43}
+.card{border:1px solid #d8e6f3;border-radius:20px;box-shadow:0 8px 28px rgba(21,69,112,.07)}
+button{background:linear-gradient(135deg,#0868a6,#14446f);border-radius:11px;font-weight:600;transition:transform .15s,filter .15s}button:hover{filter:brightness(1.1);transform:translateY(-1px)}
+input,select,textarea{border:1px solid #b8d1e6;border-radius:10px;background:#fbfdff}
+#app>section.card:first-child{padding:12px 18px}
+#app>section.card:first-child>.row:nth-child(2){display:none!important}
+#sylajDashboard{position:relative;overflow:hidden;background:linear-gradient(125deg,#092c4c 0%,#0b5484 52%,#147cae 100%);color:#fff;padding:28px 24px 32px;border:none;box-shadow:0 16px 42px rgba(10,62,110,.22)}
+#sylajDashboard:before{content:'';position:absolute;right:-85px;top:-130px;width:340px;height:340px;border:55px solid rgba(255,255,255,.055);border-radius:50%;pointer-events:none}
+#sylajDashboard h2{font-size:clamp(24px,4vw,35px);margin:0 0 5px;color:white;letter-spacing:.3px}
+#sylajDashboard .dash-sub{margin:0 0 23px;color:#c8e8fc;font-size:14px}
+#sylajDashboard .dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+#sylajDashboard .dash-tile{margin:0;min-width:0;min-height:122px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;background:rgba(255,255,255,.96);color:#164369;border:1px solid rgba(255,255,255,.65);border-radius:18px;box-shadow:0 6px 18px rgba(0,22,45,.14);font-size:14px;font-weight:750;text-align:center;padding:14px 6px;cursor:pointer}
+#sylajDashboard .dash-tile:hover,#sylajDashboard .dash-tile:focus-visible{background:#e4f6ff;transform:translateY(-3px);outline:2px solid #6bc8ff}
+#sylajDashboard .dash-emoji{display:grid;place-items:center;width:57px;height:57px;background:linear-gradient(145deg,#e5f5ff,#c7e6f7);border-radius:18px;font-size:29px;box-shadow:inset 0 0 0 1px #fff}
+#sylajDashboard .dash-tile span:last-child{overflow-wrap:anywhere}
+@media(max-width:640px){body{padding:10px}#sylajDashboard{padding:22px 14px}#sylajDashboard .dash-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}#sylajDashboard .dash-tile{min-height:105px;font-size:12px;border-radius:13px}#sylajDashboard .dash-emoji{width:48px;height:48px;font-size:25px}}
+@media(min-width:900px){#sylajDashboard .dash-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head><body>
+<h1><img src="SYLAJ-Evidenca-logo-4-1.png" alt="SYLAJ-Evidenca" style="width:180px;max-width:100%;height:auto"></h1>
+<section class="card" id="login"><h2>Prijava</h2><div class="row"><label><span>E-pošta</span><input id="email" type="email" autocomplete="username"></label><label><span>Geslo</span><input id="password" type="password" autocomplete="current-password"></label><button id="loginBtn">Prijava</button></div></section><p id="message" class="msg" role="status"></p>
+
+<div id="app" class="hidden"><section class="card"><div class="row"><strong id="who"></strong><button id="logout" class="alt">Odjava</button></div><div class="row"><button id="hoursTab" class="active">Delovne ure</button><button id="toolsTab">Orodja</button><button id="workersTab">Upravljanje delavcev</button><button id="sitesTab">Gradbišča</button><button id="bagerTab">Bagerji</button><button id="vozilaTab">🚐 Vozila</button></div><small>Odmor se ne odšteva.</small></section>
+<div id="hoursView"><section class="card"><h2>Vnos delovnih ur</h2><div class="row"><label><span>Delavec</span><select id="worker"></select></label><label><span>Način</span><select id="mode"><option value="auto">Samodejno</option><option value="manual">Ročno</option></select></label></div><div id="automatic"><button id="start">Začetek dela</button><button id="end">Konec dela</button></div><div id="manual" class="hidden"><div class="row"><label><span>Datum</span><input id="workDate" type="date"></label><label><span>Začetek</span><input id="startTime" type="time" value="07:00"></label><label><span>Konec</span><input id="endTime" type="time" value="15:00"></label><label><span>Opomba</span><input id="note"></label></div><button id="saveManual">Shrani ročno</button></div><p id="entryMessage" class="msg"></p></section>
+<section class="card"><h2>Pregled ur</h2><div class="row"><label><span>Leto</span><input type="number" id="year" min="2020" max="2100"></label><label><span>Delavec</span><select id="filterWorker"></select></label><label><span>Ekipa</span><select id="filterTeam"></select></label><button id="refresh">Osveži</button><button id="export" class="alt">Izvoz za Excel (CSV)</button></div><div id="months" class="months"></div><h3 id="monthTitle"></h3><div id="totals"></div><div id="teamTotals"></div><div class="scroll"><table><thead><tr><th>Datum</th><th>Delavec</th><th>Začetek</th><th>Konec</th><th>Ure</th><th>Opomba</th><th>Uredi</th></tr></thead><tbody id="rows"></tbody></table></div><small>Podatki prejšnjih let ostanejo shranjeni v bazi.</small></section></div>
+<div id="workersView" class="hidden"><section class="card"><h2>Upravljanje delavcev</h2><div class="row"><label><span>Ime in priimek</span><input id="newWorkerName" placeholder="Ime in priimek"></label><label><span>Ekipa</span><select id="newWorkerTeam"></select></label><button id="addWorker">+ Dodaj delavca</button></div><p id="workersMessage" class="msg"></p><h3>Seznam delavcev</h3><button id="reloadWorkers" class="alt">Osveži</button><div class="scroll"><table><thead><tr><th>Delavec</th><th>Ekipa</th><th>Status</th><th>Dejanje</th></tr></thead><tbody id="workerRows"></tbody></table></div><small>Odstranitev pomeni deaktivacijo; delovne ure se ne izbrišejo. Premestitev je dovoljena administratorju.</small></section></div>
+
+<div id="toolsView" class="hidden">
+  <section class="card">
+    <h2>Prevzem orodja</h2>
+    <div class="row">
+      <label>
+        <span>Ekipa</span>
+        <select id="toolTeam"></select>
+      </label>
+      <label>
+        <span>Delavec</span>
+        <select id="toolWorker"></select>
+      </label>
+      <label>
+        <span>Orodje – izberi iz seznama</span>
+        <select id="toolName">
+          <option value="">Izberite orodje</option>
+        </select>
+      </label>
+      <img id="toolMainPhoto"
+     alt="Fotografija orodja"
+     style="display:none;width:180px;max-width:100%;border-radius:10px;margin:10px 0;">
+      <label>
+        <span>Količina</span>
+        <input id="toolQty" type="number" min="1" step="1" value="1">
+      </label>
+      <label>
+        <span>Stanje ob prevzemu</span>
+        <select id="toolCondition">
+          <option>V redu</option>
+          <option>Poškodovano</option>
+        </select>
+      </label>
+      
+<label>
+  <span>Opomba</span>
+  <input id="toolNote" placeholder="Vpiši opombo">
+</label>
+
+<div>
+  <span>Fotografije ob prevzemu</span>
+
+  <label>
+    <span>📷 Fotografiraj</span>
+    <input id="toolCamera" type="file"
+      accept="image/*" capture="environment"
+      multiple>
+  </label>
+
+  <label>
+    <span>🖼️ Naloži fotografije</span>
+    <input id="toolPhotos" type="file"
+      accept="image/*" multiple>
+  </label>
+
+  <div id="toolPhotosPreview"></div>
+</div>
+    </div>
+    <button id="takeTool">Shrani prevzem</button>
+    <p id="toolMessage" class="msg"></p>
+  </section>
+
+  <section class="card">
+    <h2>Pregled orodja</h2>
+    <button id="refreshTools">Osveži</button>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Orodje</th>
+            <th>Količina</th>
+            <th>Ekipa</th>
+            <th>Delavec</th>
+            <th>Prevzeto</th>
+            <th>Stanje ob prevzemu</th>
+            <th>Vrnjeno</th>
+            <th>Stanje ob vrnitvi</th>
+            <th>Opomba</th>
+            <th>Potrditev</th>
+          </tr>
+        </thead>
+        <tbody id="toolRows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div id="returnPhotoPanel" class="card" style="display:none">
+  <h3>Vračilo orodja</h3>
+
+  <label>Opomba</label>
+  <input id="returnNote" placeholder="Vpiši opombo">
+
+  <label>📷 Fotografiraj</label>
+  <input id="returnCamera" type="file"
+    accept="image/*" capture="environment">
+
+  <label>🖼️ Naloži fotografije</label>
+  <input id="returnPhotos" type="file"
+    accept="image/*" multiple>
+
+  <button id="saveReturnPhotos" type="button">
+    Shrani vračilo
+  </button>
+</div>
+
+<section id="sitesView" class="card hidden">
+  <h2>Gradbišča</h2>
+
+  <label>Naziv gradbišča</label>
+  <input id="siteName" type="text"
+         placeholder="Ime gradbišča">
+
+  <label>Naslov</label>
+  <input id="siteAddress" type="text"
+         placeholder="Naslov gradbišča">
+
+  <button id="addSite" type="button">
+    Dodaj gradbišče
+  </button>
+
+  <p id="siteMessage" class="msg"></p>
+
+  <h3>Moja gradbišča</h3>
+  <div id="siteList"></div>
+
+<div class="card">
+  <h3>Dnevno poročilo del</h3>
+
+  <label>Gradbišče
+    <select id="reportSite"></select>
+  </label>
+
+  <label>Datum
+    <input id="reportDate" type="date">
+  </label>
+
+  <label>Opravljeno delo
+    <textarea id="reportWork"
+      placeholder="Kaj ste danes delali?"></textarea>
+  </label>
+
+  <label>Količina
+    <input id="reportQuantity" type="number" step="0.01">
+  </label>
+
+  <label>Enota
+    <select id="reportUnit">
+      <option value="m">m</option>
+      <option value="m2">m²</option>
+      <option value="m3">m³</option>
+      <option value="kos">kos</option>
+      <option value="ur">ur</option>
+    </select>
+  </label>
+
+  <label>Fotografije del
+    <input id="reportPhotos" type="file"
+      accept="image/*" multiple>
+  </label>
+
+  <button id="saveSiteReport" type="button">
+    Shrani poročilo
+  </button>
+
+  <p id="siteReportMessage" class="msg"></p>
+
+  <h3>Zgodovina opravljenih del</h3>
+  <div id="siteReportHistory"></div>
+</div>
+
+<div class="card">
+  <h3>Mesečna in letna evidenca gradbišč</h3>
+
+  <div class="row">
+    <label>Leto
+      <select id="siteReportYear"></select>
+    </label>
+
+    <label>Mesec
+      <select id="siteReportMonth">
+        <option value="">Vsi meseci</option>
+        <option value="1">Januar</option>
+        <option value="2">Februar</option>
+        <option value="3">Marec</option>
+        <option value="4">April</option>
+        <option value="5">Maj</option>
+        <option value="6">Junij</option>
+        <option value="7">Julij</option>
+        <option value="8">Avgust</option>
+        <option value="9">September</option>
+        <option value="10">Oktober</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+    </label>
+  </div>
+
+  <label>Gradbišče
+    <select id="siteReportFilter">
+      <option value="">Vsa gradbišča</option>
+    </select>
+  </label>
+
+  <div id="siteMonthlyReport">
+    Nalaganje evidence...
+  </div>
+
+  <button id="siteReportCSV" type="button">
+    Prenesi CSV (Excel)
+  </button>
+</div>
+
+</section>
+</div>
+  
+<section id="bagerView" class="card hidden">
+  <h2>Bagerji – Evidenca strojev</h2>
+  <div class="card">
+  <h3>Upravljanje bagerjev</h3>
+  <label>Naziv bagerja
+    <input id="newBagerName" type="text"
+           placeholder="Npr. Yanmar VIO57">
+  </label>
+  <button id="addBager" type="button">Dodaj bager</button>
+  <p id="addBagerMessage" class="msg"></p>
+  </div>
+  <div class="row">
+    <label>Bager
+      <select id="bagerSelect"></select>
+    </label>
+    <label>Datum
+      <input id="bagerDate" type="date">
+    </label>
+  </div>
+
+  <h3>Strojne ure</h3>
+  <div class="row">
+    <label>Začetno stanje (h)
+      <input id="bagerStart" type="number" step="0.1">
+    </label>
+    <label>Končno stanje (h)
+      <input id="bagerEnd" type="number" step="0.1">
+    </label>
+  </div>
+  <label>Fotografija števca
+    <input id="bagerPhoto" type="file" accept="image/*" capture="environment">
+  </label>
+
+  <h3>Gorivo</h3>
+  <label>Litri goriva
+    <input id="bagerFuel" type="number" step="0.01">
+  </label>
+
+  <button id="saveBager" type="button">Shrani evidenco</button>
+  <p id="bagerMessage" class="msg"></p>
+
+  <h3>Servisi</h3>
+  
+<div id="bagerServicePanel" class="card">
+  <h3>Dodaj servis</h3>
+
+  <label>Datum servisa
+    <input id="serviceDate" type="date">
+  </label>
+
+  <label>Stanje ur (h)
+    <input id="serviceHours" type="number" step="0.1">
+  </label>
+
+  <label>Vrsta servisa
+    <select id="serviceType">
+      <option value="">Izberi servis</option>
+      <option>Menjava olja</option>
+      <option>Menjava filtrov</option>
+      <option>Hidravlika</option>
+      <option>Motor</option>
+      <option>Redni servis</option>
+      <option>Popravilo</option>
+      <option>Drugo</option>
+    </select>
+  </label>
+
+  <label>Opis servisa
+    <textarea id="serviceDescription"></textarea>
+  </label>
+
+  <label>Stroški (€)
+    <input id="serviceCost" type="number" step="0.01">
+  </label>
+
+  <label>Naslednji servis (h)
+    <input id="serviceNextHours" type="number" step="0.1">
+  </label>
+
+  <label>Fotografija računa
+    <input id="serviceInvoice" type="file" accept="image/*">
+  </label>
+
+  <button id="saveService" type="button">
+    Shrani servis
+  </button>
+
+  <p id="serviceMessage" class="msg"></p>
+
+  <h3>Zgodovina servisov</h3>
+  <div id="serviceHistory"></div>
+</div>
+
+
+  <h3>Mesečna in letna evidenca</h3>
+  
+<div class="card">
+  <div class="row">
+    <label>Leto
+      <select id="bagerReportYear"></select>
+    </label>
+    <label>Bager
+      <select id="bagerReportMachine">
+        <option value="">Vsi bagerji</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="bagerReport">Nalaganje evidence...</div>
+
+  <button id="bagerReportCSV" type="button">
+    Prenesi CSV (Excel)
+  </button>
+</div>
+
+<div class="card">
+  <h3>Dnevna evidenca bagerjev</h3>
+
+  <label>Mesec
+    <select id="bagerDailyMonth">
+      <option value="1">Januar</option>
+      <option value="2">Februar</option>
+      <option value="3">Marec</option>
+      <option value="4">April</option>
+      <option value="5">Maj</option>
+      <option value="6">Junij</option>
+      <option value="7">Julij</option>
+      <option value="8">Avgust</option>
+      <option value="9">September</option>
+      <option value="10">Oktober</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+  </label>
+
+  <div id="bagerDailyReport">
+    Nalaganje dnevne evidence...
+  </div>
+
+  <button id="bagerDailyCSV" type="button">
+    Prenesi dnevno evidenco CSV (Excel)
+  </button>
+</div>
+
+</section>
+
+ <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+'use strict';
+ 
+const SUPABASE_URL='https://zofclcgkgwfsjrcewfml.supabase.co';
+const KEY='sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ';
+const $=id=>document.getElementById(id);
+let db=null,user=null,role='',workers=[],teams=[],monthEntries=[],yearEntries=[],toolEntries=[],selectedMonth=new Date().getMonth()+1;
+const msg=(s,id='message')=>$(id).textContent=s;
+const date=(d=new Date())=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+const clock=(d=new Date())=>[d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+const min=t=>{if(!t)return null;const a=String(t).split(':').map(Number);return a[0]*60+a[1]};
+const duration=e=>e.zacetek&&e.konec?Math.max(0,min(e.konec)-min(e.zacetek)):null;
+const fmt=n=>Math.floor(n/60)+' h '+String(n%60).padStart(2,'0')+' min';
+const admin=()=>['admin','administrator','skrbnik'].includes(role);
+const total=arr=>arr.reduce((n,e)=>n+(duration(e)??0),0);
+function addOption(id,value,text){const o=document.createElement('option');o.value=value;o.textContent=text;$(id).append(o)}
+function switchMode(){$('automatic').classList.toggle('hidden',$('mode').value!=='auto');$('manual').classList.toggle('hidden',$('mode').value!=='manual')}
+function showTab(which){
+for(const x of ['hours','tools','workers','sites','bager']){
+    $(x+'View').classList.toggle('hidden',which!==x);
+    $(x+'Tab').classList.toggle('active',which===x);
+  }
+  if(which==='tools')refreshTools();
+  if(which==='workers')renderWorkers();
+}
+  $('bagerTab').addEventListener('click', () => showTab('bager'));
+try{if(!window.supabase)throw Error('Knjižnica Supabase ni naložena.');db=window.supabase.createClient(SUPABASE_URL,KEY)}catch(e){msg('Napaka: '+e.message)}
+async function prijava(){if(!db)return msg('Supabase ni povezan.');const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return msg('Vnesite e-pošto in geslo.');$('loginBtn').disabled=true;msg('Prijavljanje ...');try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;user=data.user;const {data:profile,error:pe}=await db.from('profili').select('vloga').eq('id',user.id).single();if(pe)throw pe;role=String(profile?.vloga||'').trim().toLowerCase();if(!['admin','administrator','skrbnik','vodja'].includes(role))throw Error('Uporabnik nima dovoljenja za evidenco.');await loadTeams();await loadWorkers();$('who').textContent=(admin()?'Administrator':'Vodja')+' – '+email;$('login').classList.add('hidden');$('app').classList.remove('hidden');msg('Prijava uspešna!');await refresh();renderWorkers()}catch(e){msg('Napaka: '+e.message)}finally{$('loginBtn').disabled=false}}
+async function loadWorkers(){const query=admin()?db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe(naziv)').order('ime_priimek'):db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe!inner(naziv,vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');const {data,error}=await query;if(error)throw error;workers=data||[];$('worker').replaceChildren();$('filterWorker').replaceChildren();addOption('filterWorker','','Vsi dovoljeni delavci');workers.forEach(w=>{if(w.aktiven)addOption('worker',w.id,w.ime_priimek+' – '+(w.ekipe?.naziv||''));addOption('filterWorker',w.id,w.ime_priimek)});if(!workers.length)msg('Ni delavcev v vaši ekipi.','entryMessage')}
+function workerId(){const id=$('worker').value;if(!workers.some(w=>String(w.id)===id))throw Error('Izberite delavca.');if(!workers.find(w=>String(w.id)===id)?.aktiven)throw Error('Delavec ni aktiven.');return id}
+
+async function insertEntry(payload) {
+  const worker = workers.find(
+    w => String(w.id) === String(payload.delavec_id)
+  );
+
+  if (!worker) {
+    throw Error('Delavec ni najden.');
+  }
+
+  const { data: active, error: activeError } = await db
+    .from('aktivna_gradbisca')
+    .select('gradbisce_id')
+    .eq('ekipa_id', worker.ekipa_id)
+    .maybeSingle();
+
+  if (activeError) throw activeError;
+
+  if (!active?.gradbisce_id) {
+    throw Error('Najprej izberite aktivno gradbišče.');
+  }
+
+  const { error } = await db
+    .from('delovne_ure')
+    .insert({
+      ...payload,
+      vnesel_id: user.id,
+      gradbisce_id: active.gradbisce_id
+    });
+
+  if (error) throw error;
+}
+
+async function startWork(){try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum);if(error)throw error;if((data||[]).some(e=>e.zacetek&&!e.konec))throw Error('Delo je za danes že začeto.');await insertEntry({delavec_id:id,datum,zacetek:clock(now),konec:null});msg('Začetek dela shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
+async function endWork(){try{const id=workerId(),now=new Date(),datum=date(now);msg('Shranjevanje ...','entryMessage');const {data,error}=await db.from('delovne_ure').select('id,zacetek,konec').eq('delavec_id',id).eq('datum',datum).order('id',{ascending:false});if(error)throw error;const open=(data||[]).find(e=>e.zacetek&&!e.konec);if(!open)throw Error('Za danes ni odprtega začetka dela.');const {error:ue}=await db.from('delovne_ure').update({konec:clock(now)}).eq('id',open.id);if(ue)throw ue;msg('Konec dela shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
+async function saveManual(){try{const id=workerId(),datum=$('workDate').value,zacetek=$('startTime').value,konec=$('endTime').value,opomba=$('note').value.trim();if(!datum||!zacetek||!konec)throw Error('Vnesite datum, začetek in konec.');if(min(konec)<=min(zacetek))throw Error('Konec mora biti po začetku.');await insertEntry({delavec_id:id,datum,zacetek,konec,opomba:opomba||null});msg('Ročni vnos shranjen.','entryMessage');await refresh()}catch(e){msg('Napaka: '+e.message,'entryMessage')}}
+async function fetchPeriod(from,to){let out=[],offset=0;while(true){const {data,error}=await db.from('delovne_ure').select('id,delavec_id,ekipa_id,datum,zacetek,konec,opomba').gte('datum',from).lt('datum',to).order('datum',{ascending:true}).range(offset,offset+999);if(error)throw error;out.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000}return admin()?out:out.filter(e=>teams.some(t=>String(t.id)===String(e.ekipa_id)))}
+async function refresh(){if(!user)return;try{const y=Number($('year').value);if(!Number.isInteger(y)||y<2020||y>2100)throw Error('Preverite leto.');yearEntries=await fetchPeriod(y+'-01-01',(y+1)+'-01-01');monthEntries=yearEntries.filter(e=>Number(e.datum.slice(5,7))===selectedMonth);render()}catch(e){msg('Napaka pri branju ur: '+e.message,'entryMessage')}}
+const selected=arr=>arr.filter(e=>(!$('filterWorker').value||String(e.delavec_id)===$('filterWorker').value)&&(!$('filterTeam').value||String(e.ekipa_id)===$('filterTeam').value));
+function render(){const rows=selected(monthEntries),annual=selected(yearEntries);$('totals').textContent='Mesec: '+fmt(total(rows))+' | Leto: '+fmt(total(annual));renderTeamTotals();const body=$('rows');body.replaceChildren();const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));for(const e of rows){const tr=document.createElement('tr');for(const v of [e.datum,names.get(String(e.delavec_id))||e.delavec_id,String(e.zacetek||'').slice(0,5),String(e.konec||'').slice(0,5),duration(e)===null?'—':fmt(duration(e)),e.opomba||'']){const td=document.createElement('td');td.textContent=v;tr.append(td)}const td=document.createElement('td');if(admin()){const b=document.createElement('button');b.className='alt';b.textContent='Popravi';b.onclick=()=>editEntry(e.id);td.append(b)}tr.append(td);body.append(tr)}if(!rows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=7;td.textContent='Ni vnosov za izbrani mesec.';tr.append(td);body.append(tr)}const namesMonths=['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];$('monthTitle').textContent=namesMonths[selectedMonth-1]+' '+$('year').value;[...$('months').children].forEach((b,i)=>b.classList.toggle('active',i+1===selectedMonth))}
+async function editEntry(id){if(!admin())return;const e=monthEntries.find(r=>String(r.id)===String(id));if(!e)return;const a=prompt('Začetek (HH:MM)',String(e.zacetek||'').slice(0,5));if(a===null)return;const b=prompt('Konec (HH:MM)',String(e.konec||'').slice(0,5));if(b===null)return;if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(a)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(b)||min(b)<=min(a))return alert('Neveljavne ure.');try{const {error}=await db.from('delovne_ure').update({zacetek:a+':00',konec:b+':00'}).eq('id',id);if(error)throw error;await refresh()}catch(err){alert('Napaka: '+err.message)}}
+function exportCSV(){const names=new Map(workers.map(w=>[String(w.id),w.ime_priimek])),arr=selected(yearEntries).filter(e=>Number(e.datum.slice(5,7))===selectedMonth),monthly=new Map(),yearly=new Map();const data=[['Vrsta','Datum / mesec','Delavec','Začetek','Konec','Minute','Opomba']];for(const e of arr){const name=names.get(String(e.delavec_id))||'',d=duration(e);data.push(['Dnevno',e.datum,name,e.zacetek||'',e.konec||'',d??'',e.opomba||'']);if(d!==null){const k=name+'|'+e.datum.slice(0,7);monthly.set(k,(monthly.get(k)||0)+d)}}for(const e of selected(yearEntries)){const d=duration(e);if(d!==null){const name=names.get(String(e.delavec_id))||'';yearly.set(name,(yearly.get(name)||0)+d)}}for(const [key,n] of monthly){const i=key.lastIndexOf('|');data.push(['Mesečno',key.slice(i+1),key.slice(0,i),'','',n,''])}for(const [name,n] of yearly)data.push(['Letno',$('year').value,name,'','',n,'']);const csv='\ufeff'+data.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='SYLAJ-Evidenca-'+$('year').value+'-'+String(selectedMonth).padStart(2,'0')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+async function loadTeams(){const q=admin()?db.from('ekipe').select('id,naziv,vodja_id').order('naziv'):db.from('ekipe').select('id,naziv,vodja_id').eq('vodja_id',user.id).order('naziv');const {data,error}=await q;if(error)throw error;teams=data||[];$('toolTeam').replaceChildren();teams.forEach(t=>addOption('toolTeam',t.id,t.naziv));for(const id of ['newWorkerTeam','filterTeam']){$(id).replaceChildren();if(id==='filterTeam')addOption(id,'','Vse ekipe');teams.forEach(t=>addOption(id,t.id,t.naziv))}await loadToolWorkers()}
+
+async function loadToolWorkers(){
+  $('toolWorker').replaceChildren();
+  const team=teams.find(t=>String(t.id)===$('toolTeam').value);
+  if(!team)return;
+  const {data,error}=await db.from('delavci')
+    .select('id,ime_priimek')
+    .eq('ekipa_id',team.id)
+    .eq('aktiven',true)
+    .order('ime_priimek');
+  if(error){
+    msg('Napaka: '+error.message,'toolMessage');
+    return;
+  }
+  (data||[]).forEach(w=>addOption('toolWorker',w.id,w.ime_priimek));
+}
+
+async function loadToolNames(){
+  const select=$('toolName');
+  select.replaceChildren();
+  addOption('toolName','','Izberite orodje');
+
+  const {data,error}=await db.from('orodja')
+    .select('id,naziv,fotografija')
+    .order('naziv');
+
+  if(error)throw error;
+
+  (data||[]).forEach(t=>
+    addOption('toolName',t.id,t.naziv)
+  );
+}
+
+$('toolName').addEventListener('change', async () => {
+  const foto = $('toolMainPhoto');
+  foto.style.display = 'none';
+  foto.removeAttribute('src');
+
+  const id = $('toolName').value;
+  if (!id) return;
+
+  const { data, error } = await db
+    .from('orodja')
+    .select('fotografija')
+    .eq('id', id)
+    .single();
+
+  if (error || !data?.fotografija) return;
+
+  const { data: urlData } = await db.storage
+    .from('sylaj-fotografije')
+    .createSignedUrl(data.fotografija, 3600);
+
+  if (urlData?.signedUrl) {
+    foto.src = urlData.signedUrl;
+    foto.style.display = 'block';
+  }
+});
+
+
+async function takeTool(){
+  try{
+    const toolId=Number($('toolName').value);
+    const qty=Number($('toolQty').value);
+    const team=teams.find(t=>String(t.id)===$('toolTeam').value);
+    const worker=$('toolWorker').value;
+
+    if(!toolId||!Number.isInteger(qty)||qty<1||!team||!worker)
+      throw Error('Izberite orodje, količino, ekipo in delavca.');
+
+    $('takeTool').disabled=true;
+
+    const {data:tool,error:toolError}=await db.from('orodja')
+      .select('id,naziv')
+      .eq('id',toolId)
+      .single();
+
+    if(toolError)throw toolError;
+
+    
+const {data: regjistrimi, error} = await db
+  .from('evidenca_orodja')
+  .insert({
+    orodje_id: tool.id,
+    naziv_orodja: tool.naziv,
+    kolicina: qty,
+    ekipa_id: team.id,
+    delavec_id: Number(worker),
+    prevzel_uid: user.id,
+    stanje_ob_prevzemu: $('toolCondition').value,
+    opombe: $('toolNote').value.trim() || null
+  })
+  .select('id')
+  .single();
+
+if(error) throw error;
+
+const photoCount = await uploadToolPhotos(
+  regjistrimi.id,
+  'prevzem'
+);
+
+
+    $('toolName').value='';
+    $('toolNote').value='';
+    msg('Prevzem shranjen.','toolMessage');
+    await refreshTools();
+  }catch(e){
+    msg('Napaka: '+e.message,'toolMessage');
+  }finally{
+    $('takeTool').disabled=false;
+  }
+}
+
+
+async function uploadToolPhotos(regjistrimiId, lloji = 'prevzem') {
+  const camera = document.getElementById('toolCamera');
+  const gallery = document.getElementById('toolPhotos');
+
+  const files = [
+    ...Array.from(camera?.files || []),
+    ...Array.from(gallery?.files || [])
+  ];
+
+  if (!files.length) return 0;
+  if (!user?.id) throw new Error('Uporabnik ni prijavljen.');
+
+  let uploaded = 0;
+
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Dovoljene so samo fotografije.');
+    }
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    const safeExt = /^[a-z0-9]{1,8}$/.test(ext) ? ext : 'jpg';
+    const unique = crypto.randomUUID();
+    const path = `${user.id}/${regjistrimiId}/${unique}.${safeExt}`;
+
+    const { error: uploadError } = await db.storage
+      .from('sylaj-fotografije')
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { error: saveError } = await db
+      .from('fotografite_opomba')
+      .insert({
+        lloji: lloji,
+        regjistrimi_id: regjistrimiId,
+        fotografia_path: path,
+        krijuar_nga: user.id
+      });
+
+    if (saveError) throw saveError;
+
+    uploaded++;
+  }
+
+  camera.value = '';
+  gallery.value = '';
+
+  return uploaded;
+}
+
+async function refreshTools(){
+  if(!user)return;
+  try{
+    let q=db.from('evidenca_orodja')
+      .select('id,naziv_orodja,kolicina,ekipa_id,delavec_id,prevzel_uid,datum_prevzema,datum_vracila,vracilo_potrjeno,stanje_ob_prevzemu,stanje_ob_vracilu,opombe')
+      .order('datum_prevzema',{ascending:false})
+      .limit(1000);
+
+    if(!admin()){
+      if(!teams.length){
+        toolEntries=[];
+        renderTools();
+        return;
+      }
+      q=q.in('ekipa_id',teams.map(t=>t.id));
+    }
+
+    const {data,error}=await q;
+    if(error)throw error;
+
+    toolEntries=data||[];
+    renderTools();
+  }catch(e){
+    msg('Napaka pri branju orodja: '+e.message,'toolMessage');
+  }
+}
+
+
+function renderTools(){
+  const body=$('toolRows');
+  body.replaceChildren();
+  const tn=new Map(teams.map(t=>[String(t.id),t.naziv]));
+  const wn=new Map(workers.map(w=>[String(w.id),w.ime_priimek]));
+
+  for(const e of toolEntries){
+    const tr=document.createElement('tr');
+
+    const values=[
+      e.naziv_orodja,
+      e.kolicina,
+      tn.get(String(e.ekipa_id))||e.ekipa_id,
+      wn.get(String(e.delavec_id))||e.delavec_id,
+      e.datum_prevzema
+        ?new Date(e.datum_prevzema).toLocaleString('sl-SI'):'',
+      e.stanje_ob_prevzemu||'',
+      e.datum_vracila
+        ?new Date(e.datum_vracila).toLocaleString('sl-SI'):'—',
+      e.stanje_ob_vracilu||'—',
+      e.opombe||''
+    ];
+
+    for(const v of values){
+      const td=document.createElement('td');
+      td.textContent=v;
+      tr.append(td);
+    }
+
+    const td=document.createElement('td');
+
+    if(e.vracilo_potrjeno){
+      td.textContent='Potrjeno';
+    }else if(!e.datum_vracila){
+      if(admin() || e.prevzel_uid===user?.id){
+        const b=document.createElement('button');
+        b.textContent='Vrni orodje';
+        b.onclick=()=>returnTool(e.id);
+        td.append(b);
+      }else{
+        td.textContent='Ni vrnjeno';
+      }
+    }else if(admin()){
+      const b=document.createElement('button');
+      b.textContent='Potrdi vračilo';
+      b.onclick=()=>confirmToolReturn(e.id);
+      td.append(b);
+    }else{
+      td.textContent='Čaka na administratorja';
+    }
+
+    tr.append(td);
+    body.append(tr);
+  }
+
+  if(!toolEntries.length){
+    const tr=document.createElement('tr');
+    const td=document.createElement('td');
+    td.colSpan=10;
+    td.textContent='Ni evidentiranega orodja.';
+    tr.append(td);
+    body.append(tr);
+  }
+}
+
+
+
+let returnToolId = null;
+
+async function returnTool(id) {
+  try {
+    const e = toolEntries.find(x => String(x.id) === String(id));
+
+    if (!e) throw Error('Orodje ni najdeno.');
+    if (e.datum_vracila) throw Error('Orodje je že vrnjeno.');
+
+    if (!admin() && String(e.prevzel_uid) !== String(user.id)) {
+      throw Error('Nimate dovoljenja za vračilo.');
+    }
+
+    const stanje = prompt(
+      'Stanje ob vrnitvi (V redu / Poškodovano):',
+      'V redu'
+    );
+
+    if (stanje === null) return;
+
+    const odgovor = stanje.trim().toLowerCase();
+
+    if (!['v redu', 'poškodovano'].includes(odgovor)) {
+      throw Error('Vnesite V redu ali Poškodovano.');
+    }
+
+    returnToolId = {
+      id: e.id,
+      stanje: odgovor === 'v redu' ? 'V redu' : 'Poškodovano'
+    };
+
+    $('returnNote').value = '';
+    $('returnCamera').value = '';
+    $('returnPhotos').value = '';
+
+    $('returnPhotoPanel').style.display = 'block';
+    $('returnPhotoPanel').scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+
+  } catch (e) {
+    msg('Napaka: ' + e.message, 'toolMessage');
+  }
+}
+
+async function saveToolReturn() {
+  const button = $('saveReturnPhotos');
+
+  try {
+    if (!returnToolId) throw Error('Najprej izberite orodje.');
+
+    button.disabled = true;
+
+    const { id, stanje } = returnToolId;
+    const opomba = $('returnNote').value.trim();
+
+    const { data, error } = await db
+      .from('evidenca_orodja')
+      .update({
+        datum_vracila: new Date().toISOString(),
+        stanje_ob_vracilu: stanje,
+        vracilo_potrjeno: false,
+        ...(opomba ? { opombe: opomba } : {})
+      })
+      .eq('id', id)
+      .is('datum_vracila', null)
+      .select('id');
+
+    if (error) throw error;
+    if (!data || !data.length) {
+      throw Error('Vračilo ni bilo shranjeno.');
+    }
+
+    const camera = $('returnCamera');
+    const gallery = $('returnPhotos');
+
+    const files = [
+      ...Array.from(camera.files || []),
+      ...Array.from(gallery.files || [])
+    ];
+
+    let uploaded = 0;
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        throw Error('Dovoljene so samo fotografije.');
+      }
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      const safeExt = /^[a-z0-9]{1,8}$/.test(ext) ? ext : 'jpg';
+      const path = `${user.id}/${id}/${crypto.randomUUID()}.${safeExt}`;
+
+      const { error: uploadError } = await db.storage
+        .from('sylaj-fotografije')
+        .upload(path, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { error: saveError } = await db
+        .from('fotografite_opomba')
+        .insert({
+          lloji: 'vracilo',
+          regjistrimi_id: id,
+          opomba: opomba || null,
+          fotografia_path: path,
+          ekipa_id: toolEntries.find(
+            x => String(x.id) === String(id)
+          )?.ekipa_id || null,
+          krijuar_nga: user.id
+        });
+
+      if (saveError) throw saveError;
+      uploaded++;
+    }
+
+    returnToolId = null;
+    $('returnPhotoPanel').style.display = 'none';
+
+    msg(
+      `Vračilo shranjeno. Fotografije: ${uploaded}. Čaka na potrditev administratorja.`,
+      'toolMessage'
+    );
+
+    await refreshTools();
+
+  } catch (e) {
+    msg('Napaka: ' + e.message, 'toolMessage');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$('saveReturnPhotos').onclick = saveToolReturn;
+
+
+async function confirmToolReturn(id){if(!admin())return;const e=toolEntries.find(x=>String(x.id)===String(id));if(!e||e.vracilo_potrjeno)return;const answer=prompt('Stanje ob vrnitvi: V redu ali Poškodovano','V redu');if(answer===null)return;const c=answer.trim().toLowerCase();if(!['v redu','poškodovano','poskodovano'].includes(c))return alert('Vnesite V redu ali Poškodovano.');if(!confirm('Potrdite vračilo: '+e.naziv_orodja+'?'))return;try{const now=new Date().toISOString();const {data,error}=await db.from('evidenca_orodja').update({datum_vracila:now,vracilo_potrjeno:true,potrjeno_uid:user.id,datum_potrditve:now,stanje_ob_vracilu:c==='v redu'?'V redu':'Poškodovano'}).eq('id',id).eq('vracilo_potrjeno',false).select('id');if(error)throw error;if(!data?.length)throw Error('Vračilo ni bilo posodobljeno.');msg('Vračilo potrjeno.','toolMessage');await refreshTools()}catch(e){msg('Napaka: '+e.message,'toolMessage')}}
+async function odjava(){try{const {error}=await db.auth.signOut();if(error)throw error;user=null;role='';workers=[];teams=[];monthEntries=[];yearEntries=[];toolEntries=[];$('app').classList.add('hidden');$('login').classList.remove('hidden');$('password').value='';msg('Odjava uspešna.')}catch(e){msg('Napaka: '+e.message)}}
+
+$('loginBtn').onclick=prijava;
+$('logout').onclick=odjava;
+$('start').onclick=startWork;
+$('end').onclick=endWork;
+$('saveManual').onclick=saveManual;
+$('refresh').onclick=refresh;
+$('export').onclick=exportCSV;
+$('mode').onchange=switchMode;
+$('year').onchange=refresh;
+$('filterWorker').onchange=render;
+$('hoursTab').onclick=()=>showTab('hours');
+$('toolsTab').onclick=async()=>{
+  showTab('tools');
+  try{
+    await loadToolNames();
+  }catch(e){
+    msg('Napaka pri nalaganju orodja: '+e.message,'toolMessage');
+  }
+};
+$('workersTab').onclick=()=>showTab('workers');
+$('addWorker').onclick=addWorker;
+$('reloadWorkers').onclick=reloadWorkers;
+$('filterTeam').onchange=render;
+$('toolTeam').onchange=loadToolWorkers;
+$('takeTool').onclick=takeTool;
+$('refreshTools').onclick=refreshTools;
+
+$('saveReturnPhotos').onclick = saveToolReturn;
+
+['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].forEach((name,i)=>{const b=document.createElement('button');b.textContent=name;b.onclick=()=>{selectedMonth=i+1;monthEntries=yearEntries.filter(e=>Number(e.datum.slice(5,7))===selectedMonth);render()};$('months').append(b)});
+$('workDate').value=date();$('year').value=new Date().getFullYear();
+
+function renderTeamTotals(){
+const area=$('teamTotals');if(!area)return;area.replaceChildren();
+const month=monthEntries,annual=yearEntries;
+for(const t of teams){const a=month.filter(e=>String(e.ekipa_id)===String(t.id)),b=annual.filter(e=>String(e.ekipa_id)===String(t.id));const line=document.createElement('p');line.textContent=t.naziv+': mesec '+fmt(total(a))+' | leto '+fmt(total(b));area.append(line)}
+if(admin()){const p=document.createElement('strong');p.textContent='SYLAJ skupaj: mesec '+fmt(total(month))+' | leto '+fmt(total(annual));area.append(p)}
+}
+function renderWorkers(){
+const body=$('workerRows');body.replaceChildren();
+for(const w of workers){const tr=document.createElement('tr');const team=teams.find(t=>String(t.id)===String(w.ekipa_id));
+for(const v of [w.ime_priimek,team?.naziv||'—',w.aktiven?'Aktiven':'Neaktiven']){const td=document.createElement('td');td.textContent=v;tr.append(td)}
+const actions=document.createElement('td');const toggle=document.createElement('button');toggle.className='alt';toggle.textContent=w.aktiven?'Odstrani':'Aktiviraj';toggle.onclick=()=>setWorkerActive(w,!w.aktiven);actions.append(toggle);
+if(admin()){const move=document.createElement('button');move.textContent='Premesti';move.onclick=()=>moveWorker(w);actions.append(move)}tr.append(actions);body.append(tr)}
+}
+async function reloadWorkers(){try{await loadWorkers();renderWorkers();await loadToolWorkers();await refresh()}catch(e){msg('Napaka: '+e.message,'workersMessage')}}
+async function addWorker(){
+try{const name=$('newWorkerName').value.trim(),team=teams.find(t=>String(t.id)===$('newWorkerTeam').value);if(name.length<3||!team)throw Error('Vnesite ime in izberite ekipo.');
+$('addWorker').disabled=true;const {error}=await db.from('delavci').insert({ime_priimek:name,ekipa_id:team.id,aktiven:true});if(error)throw error;$('newWorkerName').value='';msg('Delavec dodan.','workersMessage');await reloadWorkers()
+}catch(e){msg('Napaka: '+e.message,'workersMessage')}finally{$('addWorker').disabled=false}}
+async function setWorkerActive(w,active){
+if(!confirm((active?'Aktivirati':'Odstraniti iz aktivnih')+' delavca '+w.ime_priimek+'? Ure ostanejo shranjene.'))return;
+try{const {data,error}=await db.from('delavci').update({aktiven:active}).eq('id',w.id).select('id');if(error)throw error;if(!data?.length)throw Error('Ni dovoljenja za spremembo.');msg('Sprememba shranjena.','workersMessage');await reloadWorkers()}catch(e){msg('Napaka: '+e.message,'workersMessage')}
+}
+async function moveWorker(w){
+if(!admin())return;const choices=teams.map(t=>t.id+' = '+t.naziv).join('\n');const input=prompt('V katero ekipo premestiti '+w.ime_priimek+'?\n'+choices,'');if(input===null)return;
+const target=teams.find(t=>String(t.id)===input.trim());if(!target||String(target.id)===String(w.ekipa_id))return alert('Izberite drugo veljavno ekipo.');
+if(!confirm('Premestiti '+w.ime_priimek+' v '+target.naziv+'? Pretekle ure ostanejo pri prejšnji ekipi.'))return;
+try{const {data,error}=await db.from('delavci').update({ekipa_id:target.id,aktiven:true}).eq('id',w.id).select('id');if(error)throw error;if(!data?.length)throw Error('Ni dovoljenja za premestitev.');msg('Delavec premeščen.','workersMessage');await reloadWorkers()}catch(e){msg('Napaka: '+e.message,'workersMessage')}
+}
+</script><script>
+
+(function(){
+'use strict';
+if(document.getElementById('ratingsTab'))return;
+const tab=document.createElement('button');
+tab.id='ratingsTab';tab.textContent='Ocene delavcev';
+$('workersTab').after(tab);
+const panel=document.createElement('div');panel.id='ratingsView';panel.className='hidden';
+panel.innerHTML=`<section class="card"><h2>Dnevne ocene delavcev</h2><div class="row">
+<label><span>Delavec</span><select id="ratingWorker"></select></label>
+<label><span>Datum</span><input type="date" id="ratingDate"></label>
+<label><span>Ocena (1–5)</span><select id="ratingScore"><option value="">Izberite oceno</option><option value="1">1 – Zelo slabo</option><option value="2">2 – Slabo</option><option value="3">3 – Dobro</option><option value="4">4 – Zelo dobro</option><option value="5">5 – Odlično</option></select></label></div>
+<div class="row"><label style="flex:1;min-width:230px"><span>Opravljeno delo</span><textarea id="ratingWork" rows="3" maxlength="2000" style="font:inherit;padding:10px;width:100%;border:1px solid #bac9d6;border-radius:8px" placeholder="Kaj je delavec danes delal?"></textarea></label><label style="flex:1;min-width:230px"><span>Opomba</span><textarea id="ratingNote" rows="3" maxlength="2000" style="font:inherit;padding:10px;width:100%;border:1px solid #bac9d6;border-radius:8px" placeholder="Opomba vodje"></textarea></label></div>
+<button id="ratingSave">Shrani dnevno oceno</button><button id="ratingReload" class="alt">Osveži</button><p id="ratingMessage" class="msg" role="status"></p></section>
+<section class="card"><h2>Pregled ocen</h2><div class="row"><label><span>Leto</span><input id="ratingYear" type="number" min="2020" max="2100"></label><label><span>Mesec</span><select id="ratingMonth"></select></label></div><div class="scroll"><table><thead><tr><th>Delavec</th><th>Mesec (povprečje)</th><th>Leto (povprečje)</th><th>Ocenjeni dnevi</th></tr></thead><tbody id="ratingAverages"></tbody></table></div><h3>Dnevni vnosi – izbrani mesec</h3><div class="scroll"><table><thead><tr><th>Datum</th><th>Delavec</th><th>Ocena</th><th>Opravljeno delo</th><th>Opomba</th></tr></thead><tbody id="ratingRows"></tbody></table></div></section>`;
+$('workersView').after(panel);
+$('ratingDate').value=date();$('ratingYear').value=new Date().getFullYear();
+['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].forEach((n,i)=>{const o=document.createElement('option');o.value=i+1;o.textContent=n;$('ratingMonth').append(o)});
+$('ratingMonth').value=String(new Date().getMonth()+1);
+const notice=s=>msg(s,'ratingMessage');
+let ratingWorkers=[];
+function showRatingsTab(which){
+ $('ratingsView').classList.toggle('hidden',which!=='ratings');
+ $('ratingsTab').classList.toggle('active',which==='ratings');
+ if(which==='ratings')loadRatings();
+}
+const oldTab=showTab;
+showTab=function(which){oldTab(which);showRatingsTab(which)};
+tab.onclick=()=>showTab('ratings');
+async function getAllRatings(year){
+ let out=[],offset=0;
+ while(true){
+  const {data,error}=await db.from('ocene_delavcev')
+   .select('id,delavec_id,ekipa_id,datum,opravljeno_delo,opomba,ocena')
+   .gte('datum',year+'-01-01').lt('datum',(year+1)+'-01-01')
+   .order('datum',{ascending:false}).range(offset,offset+999);
+  if(error)throw error;
+  out.push(...(data||[]));if(!data||data.length<1000)break;offset+=1000;
+ }
+ return out;
+}
+async function loadRatings(){
+ if(!user)return;
+ try{
+  const q=admin()?db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven').order('ime_priimek'):
+   db.from('delavci').select('id,ime_priimek,ekipa_id,aktiven,ekipe!inner(vodja_id)').eq('ekipe.vodja_id',user.id).order('ime_priimek');
+  const {data,error}=await q;if(error)throw error;
+  ratingWorkers=data||[];
+  const select=$('ratingWorker'),previous=select.value;select.replaceChildren();
+  ratingWorkers.filter(w=>w.aktiven).forEach(w=>addOption('ratingWorker',w.id,w.ime_priimek));
+  if(ratingWorkers.some(w=>w.aktiven&&String(w.id)===previous))select.value=previous;
+  const year=Number($('ratingYear').value),month=Number($('ratingMonth').value);
+  if(!Number.isInteger(year)||year<2020||year>2100||month<1||month>12)throw Error('Neveljavno leto ali mesec.');
+  const ratings=await getAllRatings(year);
+  const names=new Map(ratingWorkers.map(w=>[String(w.id),w.ime_priimek]));
+  // Current leaders see only their workers; database RLS additionally restricts historical team records.
+  const visible=admin()?ratings:ratings.filter(r=>names.has(String(r.delavec_id)));
+  const monthRatings=visible.filter(r=>Number(r.datum.slice(5,7))===month);
+  const avg=arr=>arr.length?(arr.reduce((s,r)=>s+Number(r.ocena),0)/arr.length).toFixed(2):'—';
+  const summary=$('ratingAverages');summary.replaceChildren();
+  const ids=[...new Set(visible.map(r=>String(r.delavec_id)).concat(ratingWorkers.map(w=>String(w.id))))];
+  ids.forEach(id=>{
+   const yr=visible.filter(r=>String(r.delavec_id)===id);
+   const mo=monthRatings.filter(r=>String(r.delavec_id)===id);
+   const tr=document.createElement('tr');
+   [names.get(id)||('ID '+id),avg(mo),avg(yr),String(yr.length)].forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.append(td)});
+   summary.append(tr);
+  });
+  const body=$('ratingRows');body.replaceChildren();
+  monthRatings.forEach(r=>{
+   const tr=document.createElement('tr');
+   [r.datum,names.get(String(r.delavec_id))||('ID '+r.delavec_id),r.ocena,r.opravljeno_delo,r.opomba||''].forEach(value=>{const td=document.createElement('td');td.textContent=String(value);td.style.whiteSpace='normal';tr.append(td)});
+   body.append(tr);
+  });
+  notice('');
+ }catch(e){notice('Napaka: '+e.message)}
+}
+async function saveRating(){
+ if(!user)return;
+ const id=Number($('ratingWorker').value),datum=$('ratingDate').value,score=Number($('ratingScore').value),work=$('ratingWork').value.trim(),note=$('ratingNote').value.trim();
+ const worker=ratingWorkers.find(w=>Number(w.id)===id&&w.aktiven);
+ if(!worker||!/^\d{4}-\d{2}-\d{2}$/.test(datum)||!Number.isInteger(score)||score<1||score>5||!work){notice('Izberite delavca, datum, oceno 1–5 in vnesite opravljeno delo.');return}
+ if(datum>date()){notice('Datum ne sme biti v prihodnosti.');return}
+ if(!confirm('Shraniti oceno '+score+' za '+worker.ime_priimek+' dne '+datum+'?'))return;
+ $('ratingSave').disabled=true;
+ try{
+  const {error}=await db.from('ocene_delavcev').insert({delavec_id:id,ekipa_id:worker.ekipa_id,datum,opravljeno_delo:work,opomba:note||null,ocena:score,ocenil_id:user.id});
+  if(error)throw error;
+  $('ratingWork').value='';$('ratingNote').value='';$('ratingScore').value='';
+  $('ratingYear').value=datum.slice(0,4);$('ratingMonth').value=String(Number(datum.slice(5,7)));
+  await loadRatings();notice('Ocena je shranjena.');
+ }catch(e){notice('Napaka: '+e.message+(String(e.code)==='23505'?' (Delavec ima za ta datum že oceno.)':''))}
+ finally{$('ratingSave').disabled=false}
+}
+$('ratingSave').onclick=saveRating;
+$('ratingReload').onclick=loadRatings;
+$('ratingYear').onchange=loadRatings;
+$('ratingMonth').onchange=loadRatings;
+const priorLogin=$('loginBtn').onclick;
+$('loginBtn').onclick=async function(){await priorLogin();if(user&&!$('app').classList.contains('hidden'))await loadRatings()};
+const priorLogout=$('logout').onclick;
+$('logout').onclick=async function(){await priorLogout();ratingWorkers=[];$('ratingsView').classList.add('hidden')};
+})();
+
+// ===== SYLAJ GPS =====
+(function () {
+'use strict';
+
+const gpsTab = document.createElement('button');
+gpsTab.id = 'gpsTab';
+gpsTab.textContent = 'GPS';
+$('ratingsTab').after(gpsTab);
+
+const gpsView = document.createElement('div');
+gpsView.id = 'gpsView';
+gpsView.className = 'hidden';
+
+gpsView.innerHTML = `
+<section class="card">
+<h2>SYLAJ GPS</h2>
+<p id="gpsStatus">GPS ni aktiven.</p>
+<button id="gpsStart">Začni GPS</button>
+<button id="gpsStop" class="alt">Ustavi GPS</button>
+<button id="gpsRefresh">Osveži GPS</button>
+<p id="gpsMessage" class="msg"></p>
+<small>
+GPS je dovoljen med 05:00 in 21:00.
+Lokacija se beleži samo med aktivno sejo.
+</small>
+</section>`;
+
+$('ratingsView').after(gpsView);
+
+let gpsWatch = null;
+let gpsTimer = null;
+let gpsBusy = false;
+
+const gpsNotice = text =>
+  $('gpsMessage').textContent = text;
+
+function gpsAllowed() {
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  return minutes >= 300 && minutes < 1260;
+}
+
+async function gpsLocation(position) {
+  if (!user || !gpsAllowed() || gpsBusy) return;
+
+  gpsBusy = true;
+
+  try {
+    const {error} = await db.from('gps_lokacije').insert({
+      vodja_id: user.id,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      cas: new Date().toISOString()
+    });
+
+    if (error) throw error;
+
+    $('gpsStatus').textContent =
+      'GPS aktiven – ' + new Date().toLocaleTimeString('sl-SI');
+
+  } catch (e) {
+    gpsNotice('Napaka GPS: ' + e.message);
+  } finally {
+    gpsBusy = false;
+  }
+}
+
+function stopTracking() {
+  if (gpsWatch !== null) {
+    navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+  }
+
+  if (gpsTimer !== null) {
+    clearInterval(gpsTimer);
+    gpsTimer = null;
+  }
+}
+
+async function startGPS() {
+  if (!user || role !== 'vodja') return;
+
+  if (!gpsAllowed()) {
+    gpsNotice('GPS je dovoljen od 05:00 do 21:00.');
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    gpsNotice('Telefon ne podpira GPS.');
+    return;
+  }
+
+  try {
+    const {error} = await db.rpc('fillo_gps');
+    if (error) throw error;
+
+    stopTracking();
+
+    gpsWatch = navigator.geolocation.watchPosition(
+      gpsLocation,
+      e => gpsNotice('GPS: ' + e.message),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000
+      }
+    );
+
+    gpsTimer = setInterval(async () => {
+      if (!gpsAllowed()) {
+        await stopGPS();
+      }
+    }, 30000);
+
+    $('gpsStatus').textContent = 'GPS aktiven';
+    gpsNotice('GPS je zagnan.');
+
+  } catch (e) {
+    gpsNotice('Napaka: ' + e.message);
+  }
+}
+
+async function stopGPS() {
+  stopTracking();
+
+  try {
+    if (user && role === 'vodja') {
+      const {error} = await db.rpc('ndalo_gps');
+      if (error) throw error;
+    }
+
+    $('gpsStatus').textContent = 'GPS ni aktiven.';
+    gpsNotice('GPS ustavljen.');
+
+  } catch (e) {
+    gpsNotice('Napaka: ' + e.message);
+  }
+}
+
+gpsTab.onclick = () => {
+  showTab('gps');
+  gpsView.classList.remove('hidden');
+  gpsTab.classList.add('active');
+};
+
+const previousShowTab = showTab;
+
+showTab = function(which) {
+  previousShowTab(which);
+  gpsView.classList.toggle('hidden', which !== 'gps');
+  gpsTab.classList.toggle('active', which === 'gps');
+};
+
+$('gpsStart').onclick = startGPS;
+$('gpsStop').onclick = stopGPS;
+$('gpsRefresh').onclick = () => {
+  $('gpsStatus').textContent =
+    gpsWatch !== null ? 'GPS aktiven' : 'GPS ni aktiven';
+};
+
+const previousLogout = $('logout').onclick;
+
+$('logout').onclick = async function() {
+  if (gpsWatch !== null) {
+    await stopGPS();
+  }
+  await previousLogout();
+};
+
+})();
+
+
+
+(function () {
+  'use strict';
+
+  const panel = document.createElement('section');
+  panel.className = 'card hidden';
+  panel.id = 'gpsAdminMap';
+  panel.innerHTML = `
+    <h2>Lokacije ekip</h2>
+    
+<div id="gpsLiveMap" style="height:400px;min-height:400px;width:100%;border-radius:12px;margin-top:15px;"></div>
+
+
+    <button id="gpsMapRefresh">Osveži lokacije</button>
+    <p id="gpsMapStatus" class="msg"></p>
+    <div id="gpsMapResults"></div>
+  `;
+
+  document.getElementById('gpsView').append(panel);
+
+  const status = document.getElementById('gpsMapStatus');
+  const results = document.getElementById('gpsMapResults');
+
+  async function refreshGPSMap() {
+    if (!user || !admin()) return;
+
+    status.textContent = 'Nalagam lokacije ...';
+    results.replaceChildren();
+
+    try {
+      const {data: leaders, error: le} = await db
+        .from('ekipe')
+        .select('naziv,vodja_id');
+
+      if (le) throw le;
+
+      const unique = [...new Map(
+        (leaders || [])
+          .filter(t => t.vodja_id)
+          .map(t => [t.vodja_id, t])
+      ).values()];
+const mapPoints = [];
+      for (const leader of unique) {
+       
+       const {data, error} = await db
+          .from('gps_lokacije')
+          .select('latitude,longitude,cas')
+          .eq('vodja_id', leader.vodja_id)
+          .order('cas', {ascending:false})
+          .limit(1);
+
+        if (error) throw error;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const title = document.createElement('h3');
+        title.textContent = leader.naziv;
+        card.append(title);
+
+        const location = data?.[0];
+
+        if (!location) {
+          const p = document.createElement('p');
+          p.textContent = 'Ni zabeležene lokacije.';
+          card.append(p);
+        } else {
+          const lat = Number(location.latitude);
+          const lon = Number(location.longitude);
+          const time = new Date(location.cas);
+          if (!Number.isFinite(lat) || !Number.isFinite(lon) ||
+              Math.abs(lat) > 90 || Math.abs(lon) > 180 ||
+              !Number.isFinite(time.getTime())) {
+            throw Error('Neveljavni GPS podatki.');
+          }
+mapPoints.push({
+  name: leader.naziv,
+  lat: lat,
+  lon: lon,
+  time: time
+});
+          const p = document.createElement('p');
+          p.textContent = 'Zadnja lokacija: ' +
+            time.toLocaleString('sl-SI');
+
+          const age = Date.now() - time.getTime();
+          const info = document.createElement('p');
+          info.textContent = age >= 0 && age <= 120000
+            ? 'Sveža lokacija (do 2 minuti)'
+            : 'Starejša lokacija – trenutni položaj ni potrjen';
+
+          const link = document.createElement('a');
+          link.href = 'https://www.google.com/maps?q=' +
+            encodeURIComponent(lat + ',' + lon);
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = 'Odpri lokacijo v Google Maps';
+
+          card.append(p, info, link);
+        }
+
+        results.append(card);
+      }
+ 
+const mapBox = document.getElementById('gpsLiveMap');
+mapBox.replaceChildren();
+
+if (mapPoints.length > 0) {
+  const map = L.map(mapBox);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  const bounds = [];
+
+  for (const p of mapPoints) {
+    L.marker([p.lat, p.lon])
+      .addTo(map)
+      .bindPopup(
+        '<b>' + p.name + '</b><br>' +
+        'Zadnja lokacija: ' +
+        p.time.toLocaleString('sl-SI')
+      );
+    bounds.push([p.lat, p.lon]);
+  }
+
+  if (bounds.length === 1) {
+    map.setView(bounds[0], 15);
+  } else {
+    map.fitBounds(bounds, {padding: [30, 30]});
+  }
+}
+
+      status.textContent = 'Lokacije osvežene.';
+    } catch (e) {
+      status.textContent = 'Napaka: ' + e.message;
+    }
+  }
+
+  document.getElementById('gpsMapRefresh').onclick =
+    refreshGPSMap;
+
+  document.getElementById('gpsTab')
+    .addEventListener('click', () => {
+      panel.classList.toggle('hidden', !admin());
+      if (admin()) refreshGPSMap();
+    });
+})();
+</script>
+ 
+<script>
+(function () {
+  'use strict';
+
+  const panel = document.createElement('section');
+  panel.className = 'card hidden';
+  panel.id = 'toolRegisterPanel';
+
+  panel.innerHTML = `
+    <h2>Dodaj novo orodje</h2>
+    <p>Vsako orodje se evidentira posebej.</p>
+
+    <div class="row">
+      <label>
+        <span>Fotografiraj orodje</span>
+        <input id="newToolPhoto"
+          type="file"
+          accept="image/*"
+          capture="environment">
+      </label>
+    </div>
+
+    <img id="newToolPreview"
+      alt="Fotografija orodja"
+      style="display:none;max-width:250px;width:100%;
+      border-radius:10px;margin:10px 0">
+
+<button type="button" id="recognizeToolAI">
+  🤖 Prepoznaj orodje z AI
+</button>
+<p id="recognizeToolStatus"></p>
+
+    <div class="row">
+      <label>
+        <span>Ime orodja *</span>
+        <input id="newToolName"
+          placeholder="Npr. Bosch vrtalnik">
+      </label>
+
+      <label>
+        <span>Znamka</span>
+        <input id="newToolBrand"
+          placeholder="Npr. Bosch">
+      </label>
+
+      <label>
+        <span>Model</span>
+        <input id="newToolModel">
+      </label>
+
+      <label>
+        <span>Serijska številka</span>
+        <input id="newToolSerial"
+          placeholder="Ni obvezno">
+      </label>
+    </div>
+
+    <button id="saveNewTool">
+      Shrani orodje
+    </button>
+
+    <p id="newToolMessage" class="msg"></p>
+  `;
+
+  $('toolsView').prepend(panel);
+
+  const photo = $('newToolPhoto');
+  const preview = $('newToolPreview');
+  let previewUrl = null;
+
+  function updateVisibility() {
+    panel.classList.toggle('hidden', !admin());
+  }
+
+  $('toolsTab').addEventListener(
+    'click', updateVisibility
+  );
+
+  photo.onchange = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    preview.style.display = 'none';
+
+    const file = photo.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      msg('Izberite fotografijo.', 'newToolMessage');
+      return;
+    }
+
+    previewUrl = URL.createObjectURL(file);
+    preview.src = previewUrl;
+    preview.style.display = 'block';
+  };
+
+$('recognizeToolAI').onclick = async () => {
+  const file = photo.files?.[0];
+  const status = $('recognizeToolStatus');
+
+  if (!file) {
+    status.textContent = 'Najprej fotografirajte orodje.';
+    return;
+  }
+
+  status.textContent = 'AI se nalaga, počakajte...';
+
+  try {
+    const { pipeline } = await import(
+      'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1'
+    );
+
+    const classifier = await pipeline(
+      'zero-shot-image-classification',
+      'Xenova/clip-vit-base-patch32'
+    );
+
+  
+const tools = {
+  'lighter': ['Vžigalnik', 'Shkrepëse'],
+  'matchbox': ['Vžigalice', 'Shkrepëse druri'],
+  'drill': ['Vrtalnik', 'Trapan'],
+  'hammer': ['Kladivo', 'Çekiç'],
+  'screwdriver': ['Izvijač', 'Kaçavidë'],
+  'angle grinder': ['Kotni brusilnik', 'Fleks'],
+  'chainsaw': ['Motorna žaga', 'Motorsharrë'],
+  'circular saw': ['Krožna žaga', 'Sharrë rrethore'],
+  'welding machine': ['Varilni aparat', 'Aparat saldimi'],
+  'excavator': ['Bager', 'Eskavator'],
+  'wheel loader': ['Nakladalnik', 'Ngarkues'],
+  'bulldozer': ['Buldožer', 'Buldozer'],
+  'plate compactor': ['Vibracijska plošča', 'Pllakë vibruese'],
+  'rammer compactor': ['Vibracijski nabijalnik', 'Zhabë'],
+  'concrete mixer': ['Mešalec betona', 'Betonierë'],
+  'air compressor': ['Kompresor', 'Kompresor ajri'],
+  'generator': ['Agregat', 'Gjenerator'],
+  'laser level': ['Laserski nivelir', 'Nivelues laserik'],
+  'water pump': ['Vodna črpalka', 'Pompë uji'],
+  'shovel': ['Lopata', 'Lopatë'],
+  'pickaxe': ['Kramp', 'Kazmë'],
+  'wrench': ['Ključ', 'Çelës'],
+  'pliers': ['Klešče', 'Dana'],
+  'ladder': ['Lestev', 'Shkallë'],
+  'wheelbarrow': ['Samokolnica', 'Karrocë dore'],
+  'measuring tape': ['Merilni trak', 'Metër'],
+  'extension cord': ['Podaljšek', 'Kabllo zgjatuese'],
+  'electric cable': ['Električni kabel', 'Kabllo elektrike'],
+  'water pipe': ['Vodovodna cev', 'Tub uji'],
+  'gas cylinder': ['Plinska jeklenka', 'Bombolë gazi'],
+  'safety helmet': ['Zaščitna čelada', 'Helmetë'],
+  'work gloves': ['Delovne rokavice', 'Doreza pune'],
+  'safety glasses': ['Zaščitna očala', 'Syze mbrojtëse'],
+  'fire extinguisher': ['Gasilni aparat', 'Fikës zjarri'],
+  'flashlight': ['Svetilka', 'Llambë dore'],
+  'battery': ['Akumulator', 'Bateri'],
+  'screw': ['Vijak', 'Vidë'],
+  'nail': ['Žebelj', 'Gozhdë'],
+  'bolt': ['Vijak z matico', 'Bulon'],
+  'traffic cone': ['Prometni stožec', 'Kon trafiku']
+};
+
+const labels = Object.keys(tools);
+
+
+    const result = await classifier(
+      URL.createObjectURL(file),
+      labels
+    );
+
+    
+if (result?.length) {
+  const top3 = result.slice(0, 3);
+  status.replaceChildren();
+
+  const heading = document.createElement('p');
+  heading.textContent = '🤖 AI predlaga / AI propozon / AI suggests:';
+  status.appendChild(heading);
+
+  top3.forEach((item, index) => {
+    const names = tools[item.label];
+    if (!names) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.display = 'block';
+    btn.style.margin = '8px 0';
+    btn.style.whiteSpace = 'normal';
+
+    btn.textContent =
+      `${index + 1}. 🇸🇮 ${names[0]} | 🇦🇱 ${names[1]} | 🇬🇧 ${item.label}`;
+
+    btn.onclick = () => {
+      $('newToolName').value = names[0];
+      heading.textContent = '✅ Izbrano / U zgjodh: ' + names[0];
+    };
+
+    status.appendChild(btn);
+  });
+}
+
+  } catch (e) {
+    status.textContent = 'Napaka AI: ' + e.message;
+  }
+};
+
+  $('saveNewTool').onclick = async () => {
+    if (!user || !admin()) return;
+
+    const naziv = $('newToolName').value.trim();
+    const znamka = $('newToolBrand').value.trim();
+    const model = $('newToolModel').value.trim();
+    const serijska = $('newToolSerial').value.trim();
+
+    if (!naziv) {
+      msg('Vnesite ime orodja.', 'newToolMessage');
+      return;
+    }
+
+    const btn = $('saveNewTool');
+    btn.disabled = true;
+
+    try {
+      const {data, error} = await db
+        .from('orodja')
+        .insert({
+          naziv,
+          znamka: znamka || null,
+          model: model || null,
+          serijska_stevilka: serijska || null,
+          status: 'v_skladiscu',
+          ai_prepoznano: false
+        })
+        .select('id,interna_oznaka')
+        .single();
+
+      if (error) throw error;
+
+      const fotoFile = photo.files?.[0];
+
+if (fotoFile) {
+  const ext = fotoFile.name.split('.').pop().toLowerCase();
+  const path = `orodja/${data.id}/${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await db.storage
+    .from('sylaj-fotografije')
+    .upload(path, fotoFile, {
+      contentType: fotoFile.type,
+      upsert: false
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { error: fotoError } = await db
+    .from('orodja')
+    .update({ fotografija: path })
+    .eq('id', data.id);
+
+  if (fotoError) throw fotoError;
+}
+      msg(
+        'Orodje shranjeno: ' + data.interna_oznaka,
+        'newToolMessage'
+      );
+
+      $('newToolName').value = '';
+      $('newToolBrand').value = '';
+      $('newToolModel').value = '';
+      $('newToolSerial').value = '';
+      photo.value = '';
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = null;
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+
+    } catch (e) {
+      msg('Napaka: ' + e.message, 'newToolMessage');
+    } finally {
+      btn.disabled = false;
+    }
+  };
+})();
+(function () {
+async function loadSites() {
+  const list = $('siteList');
+  list.textContent = 'Nalaganje...';
+
+  const { data: sites, error } = await db
+    .from('gradbisca')
+    .select('id,naziv,naslov')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    list.textContent = 'Napaka: ' + error.message;
+    return;
+  }
+
+  const { data: active, error: activeError } = await db
+    .from('aktivna_gradbisca')
+    .select('ekipa_id,gradbisce_id');
+
+  if (activeError) {
+    list.textContent = 'Napaka: ' + activeError.message;
+    return;
+  }
+
+  list.replaceChildren();
+
+  for (const team of teams) {
+    const heading = document.createElement('h3');
+    heading.textContent = team.naziv;
+    list.append(heading);
+
+    const current = (active || []).find(
+      a => String(a.ekipa_id) === String(team.id)
+    );
+
+    for (const site of sites || []) {
+      const p = document.createElement('p');
+      const isActive =
+        String(current?.gradbisce_id) === String(site.id);
+
+      p.textContent = site.naziv +
+        (site.naslov ? ' – ' + site.naslov : '') +
+        (isActive ? ' ✅ AKTIVNO' : ' ');
+
+      if (!isActive) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Aktiviraj';
+        btn.onclick = async () => {
+          btn.disabled = true;
+          const { error: saveError } = await db
+            .from('aktivna_gradbisca')
+            .upsert({
+              ekipa_id: team.id,
+              gradbisce_id: site.id,
+              posodobljeno: new Date().toISOString()
+            }, { onConflict: 'ekipa_id' });
+
+          if (saveError) {
+            msg('Napaka: ' + saveError.message, 'siteMessage');
+            btn.disabled = false;
+            return;
+          }
+
+          msg('Aktivno gradbišče: ' + site.naziv,
+              'siteMessage');
+          await loadSites();
+        };
+        p.append(btn);
+      }
+
+      list.append(p);
+    }
+  }
+}
+
+$('addSite').addEventListener('click', async () => {
+  const naziv = $('siteName').value.trim();
+  const naslov = $('siteAddress').value.trim();
+
+  if (!naziv) {
+    msg('Vpišite naziv gradbišča', 'siteMessage');
+    return;
+  }
+
+  const { error } = await db.from('gradbisca').insert({
+    naziv,
+    naslov,
+    created_by: user.id
+  });
+
+  if (error) {
+    msg('Napaka: ' + error.message, 'siteMessage');
+    return;
+  }
+
+  $('siteName').value = '';
+  $('siteAddress').value = '';
+  msg('Gradbišče shranjeno', 'siteMessage');
+  await loadSites();
+});
+
+$('sitesTab').addEventListener('click', async () => { 
+  for (const id of [
+    'hoursView', 'toolsView', 'workersView',
+    'ratingsView', 'gpsView'
+  ]) {
+    document.getElementById(id)?.classList.add('hidden');
+  }
+
+  $('sitesView').classList.remove('hidden');
+  await loadSites();
+});
+
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const $b = id => document.getElementById(id);
+  const bagerTab = $b('bagerTab');
+
+  async function loadBagerji() {
+    const select = $b('bagerSelect');
+    select.innerHTML = '<option value="">Izberi bager</option>';
+
+    const client = window.supabase.createClient(
+  'https://zofclcgkgwfsjrcewfml.supabase.co',
+  'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+);
+    if (!client) {
+      $b('bagerMessage').textContent =
+        'Povezava z bazo še ni pripravljena.';
+      return;
+    }
+
+    const { data, error } = await client
+      .from('bagerji')
+      .select('id,naziv')
+      .eq('aktivno', true)
+      .order('naziv');
+
+    if (error) {
+      $b('bagerMessage').textContent = error.message;
+      return;
+    }
+
+    for (const bager of data || []) {
+      const option = document.createElement('option');
+      option.value = bager.id;
+      option.textContent = bager.naziv;
+      select.appendChild(option);
+    }
+  }
+$b('addBager').addEventListener('click', async () => {
+  const naziv = $b('newBagerName').value.trim();
+
+  if (!naziv) {
+    $b('addBagerMessage').textContent =
+      'Vnesite naziv bagerja.';
+    return;
+  }
+
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const { error } = await client
+    .from('bagerji')
+    .insert({ naziv, aktivno: true });
+
+  if (error) {
+    $b('addBagerMessage').textContent =
+      'Napaka: ' + error.message;
+    return;
+  }
+
+  $b('newBagerName').value = '';
+  $b('addBagerMessage').textContent =
+    'Bager uspešno dodan.';
+
+  await loadBagerji();
+});
+  bagerTab.addEventListener('click', async () => {
+  for (const id of ['hoursView', 'toolsView', 'workersView', 'sitesView', 'ratingsView', 'gpsView']) {
+    document.getElementById(id)?.classList.add('hidden');
+    
+  }
+  $b('bagerView').classList.remove('hidden');
+  await loadBagerji();
+});
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const db = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const message = text => {
+    $('serviceMessage').textContent = text;
+  };
+
+  async function loadServices() {
+    const bagerId = $('bagerSelect').value;
+    const history = $('serviceHistory');
+    history.replaceChildren();
+
+    if (!bagerId) {
+      history.textContent = 'Najprej izberite bager.';
+      return;
+    }
+
+    const { data, error } = await db
+      .from('bager_servisi')
+      .select('datum,stanje_ur,vrsta_servisa,opis,stroski,naslednji_servis_ure')
+      .eq('bager_id', bagerId)
+      .order('datum', { ascending: false });
+
+    if (error) {
+      history.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    if (!data.length) {
+      history.textContent = 'Ni zabeleženih servisov.';
+      return;
+    }
+
+    for (const servis of data) {
+      const item = document.createElement('div');
+      item.className = 'card';
+
+      const lines = [
+        'Datum: ' + servis.datum,
+        'Ure: ' + (servis.stanje_ur ?? '—'),
+        'Servis: ' + (servis.vrsta_servisa || '—'),
+        'Opis: ' + (servis.opis || '—'),
+        'Stroški: ' + (servis.stroski ?? 0) + ' €',
+        'Naslednji servis: ' +
+          (servis.naslednji_servis_ure ?? '—') + ' h'
+      ];
+
+      item.textContent = lines.join(' | ');
+      history.appendChild(item);
+    }
+  }
+
+  $('saveService').addEventListener('click', async () => {
+    const bager_id = $('bagerSelect').value;
+    const datum = $('serviceDate').value;
+    const stanje = $('serviceHours').value;
+    const vrsta = $('serviceType').value;
+
+    if (!bager_id || !datum || !stanje || !vrsta) {
+      message('Izberite bager, datum, ure in vrsto servisa.');
+      return;
+    }
+
+    const { data: authData } = await db.auth.getUser();
+
+    const payload = {
+      bager_id,
+      datum,
+      stanje_ur: Number(stanje),
+      vrsta_servisa: vrsta,
+      opis: $('serviceDescription').value.trim(),
+      stroski: $('serviceCost').value
+        ? Number($('serviceCost').value) : null,
+      naslednji_servis_ure: $('serviceNextHours').value
+        ? Number($('serviceNextHours').value) : null,
+      vnesel_id: authData.user?.id
+    };
+
+    const { error } = await db
+      .from('bager_servisi')
+      .insert(payload);
+
+    if (error) {
+      message('Napaka: ' + error.message);
+      return;
+    }
+
+    message('Servis uspešno shranjen.');
+    await loadServices();
+  });
+
+  $('bagerSelect').addEventListener('change', loadServices);
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const months = [
+    'Januar', 'Februar', 'Marec', 'April',
+    'Maj', 'Junij', 'Julij', 'Avgust',
+    'September', 'Oktober', 'November', 'December'
+  ];
+
+  const yearSelect = el('bagerReportYear');
+  const machineSelect = el('bagerReportMachine');
+  const report = el('bagerReport');
+  const csvButton = el('bagerReportCSV');
+
+  if (!yearSelect || !machineSelect || !report || !csvButton) return;
+
+  const currentYear = new Date().getFullYear();
+
+  for (let year = currentYear; year >= 2020; year--) {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    yearSelect.appendChild(option);
+  }
+
+  const number = value => Number(value) || 0;
+  const fmt = value => number(value).toLocaleString('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  let lastRows = [];
+
+  async function loadMachines() {
+    const { data, error } = await client
+      .from('bagerji')
+      .select('id,naziv')
+      .order('naziv');
+
+    if (error) {
+      report.textContent = 'Napaka pri nalaganju bagerjev: ' + error.message;
+      return false;
+    }
+
+    machineSelect.innerHTML = '<option value="">Vsi bagerji</option>';
+
+    for (const machine of data || []) {
+      const option = document.createElement('option');
+      option.value = machine.id;
+      option.textContent = machine.naziv;
+      machineSelect.appendChild(option);
+    }
+
+    return true;
+  }
+
+  async function loadReport() {
+    const year = Number(yearSelect.value);
+    const machineId = machineSelect.value;
+
+    report.textContent = 'Nalaganje evidence...';
+    lastRows = [];
+
+    const start = year + '-01-01';
+    const end = (year + 1) + '-01-01';
+
+    async function fetchRows(table, columns) {
+      let query = client
+        .from(table)
+        .select(columns)
+        .gte('datum', start)
+        .lt('datum', end);
+
+      if (machineId) query = query.eq('bager_id', machineId);
+
+      const all = [];
+      let from = 0;
+
+      while (true) {
+        const { data, error } = await query.range(from, from + 999);
+
+        if (error) throw new Error(table + ': ' + error.message);
+
+        all.push(...(data || []));
+        if (!data || data.length < 1000) break;
+
+        from += 1000;
+      }
+
+      return all;
+    }
+
+    try {
+      const [hours, fuel, services] = await Promise.all([
+        fetchRows('bager_ure', 'datum,opravljene_ure'),
+        fetchRows('bager_gorivo', 'datum,litri'),
+        fetchRows('bager_servisi', 'datum,stroski')
+      ]);
+
+      const rows = months.map(month => ({
+        month,
+        hours: 0,
+        fuel: 0,
+        services: 0
+      }));
+
+      function monthIndex(date) {
+        return Number(String(date).slice(5, 7)) - 1;
+      }
+
+      for (const entry of hours) {
+        const index = monthIndex(entry.datum);
+        if (rows[index]) rows[index].hours += number(entry.opravljene_ure);
+      }
+
+      for (const entry of fuel) {
+        const index = monthIndex(entry.datum);
+        if (rows[index]) rows[index].fuel += number(entry.litri);
+      }
+
+      for (const entry of services) {
+        const index = monthIndex(entry.datum);
+        if (rows[index]) rows[index].services += number(entry.stroski);
+      }
+
+      const total = rows.reduce((sum, row) => ({
+        month: 'SKUPAJ LETO',
+        hours: sum.hours + row.hours,
+        fuel: sum.fuel + row.fuel,
+        services: sum.services + row.services
+      }), { hours: 0, fuel: 0, services: 0 });
+
+      lastRows = [...rows, total];
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+
+      const header = document.createElement('tr');
+
+      for (const title of ['Mesec', 'Ure (h)', 'Gorivo (L)', 'Servisi (€)']) {
+        const th = document.createElement('th');
+        th.textContent = title;
+        th.style.padding = '8px 4px';
+        th.style.textAlign = 'left';
+        header.appendChild(th);
+      }
+
+      table.appendChild(header);
+
+      for (const row of lastRows) {
+        const tr = document.createElement('tr');
+
+        if (row === total) tr.style.fontWeight = 'bold';
+
+        for (const value of [
+          row.month,
+          fmt(row.hours),
+          fmt(row.fuel),
+          fmt(row.services)
+        ]) {
+          const td = document.createElement('td');
+          td.textContent = value;
+          td.style.padding = '8px 4px';
+          td.style.borderTop = '1px solid #ddd';
+          tr.appendChild(td);
+        }
+
+        table.appendChild(tr);
+      }
+
+      report.replaceChildren(table);
+
+    } catch (error) {
+      report.textContent = 'Napaka: ' + error.message;
+    }
+  }
+
+  csvButton.addEventListener('click', () => {
+    if (!lastRows.length) {
+      alert('Najprej naložite evidenco.');
+      return;
+    }
+
+    const lines = [
+      'Mesec;Ure (h);Gorivo (L);Servisi (EUR)',
+      ...lastRows.map(row => [
+        row.month,
+        fmt(row.hours),
+        fmt(row.fuel),
+        fmt(row.services)
+      ].join(';'))
+    ];
+
+    const blob = new Blob(
+      ['\uFEFF' + lines.join('\r\n')],
+      { type: 'text/csv;charset=utf-8;' }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Bagerji-evidenca-' + yearSelect.value + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  yearSelect.addEventListener('change', loadReport);
+  machineSelect.addEventListener('change', loadReport);
+
+  el('bagerTab')?.addEventListener('click', async () => {
+    const selected = machineSelect.value;
+    if (await loadMachines()) {
+      machineSelect.value = selected;
+      await loadReport();
+    }
+  });
+
+  loadMachines().then(ok => {
+    if (ok) loadReport();
+  });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const db = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const monthSelect = el('bagerDailyMonth');
+  const yearSelect = el('bagerReportYear');
+  const machineSelect = el('bagerReportMachine');
+  const report = el('bagerDailyReport');
+  const csvButton = el('bagerDailyCSV');
+
+  if (!monthSelect || !yearSelect || !machineSelect ||
+      !report || !csvButton) return;
+
+  monthSelect.value = String(new Date().getMonth() + 1);
+
+  let dailyRows = [];
+
+  const num = value => Number(value) || 0;
+  const fmt = value => num(value).toLocaleString('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  async function fetchAll(table, columns, start, end, machineId) {
+    let query = db.from(table)
+      .select(columns)
+      .gte('datum', start)
+      .lt('datum', end)
+      .order('datum', { ascending: true });
+
+    if (machineId) query = query.eq('bager_id', machineId);
+
+    const rows = [];
+
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await query.range(from, from + 999);
+      if (error) throw new Error(table + ': ' + error.message);
+      rows.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+
+    return rows;
+  }
+
+  async function loadDailyReport() {
+    const year = Number(yearSelect.value);
+    const month = Number(monthSelect.value);
+    const machineId = machineSelect.value;
+
+    if (!year || !month) return;
+
+    report.textContent = 'Nalaganje dnevne evidence...';
+    dailyRows = [];
+
+    const start = year + '-' + String(month).padStart(2, '0') + '-01';
+    const end = month === 12
+      ? (year + 1) + '-01-01'
+      : year + '-' + String(month + 1).padStart(2, '0') + '-01';
+
+    try {
+      const [hours, fuel, machines] = await Promise.all([
+        fetchAll(
+          'bager_ure',
+          'datum,bager_id,stanje_zacetek,stanje_konec,opravljene_ure',
+          start, end, machineId
+        ),
+        fetchAll(
+          'bager_gorivo',
+          'datum,bager_id,litri',
+          start, end, machineId
+        ),
+        db.from('bagerji').select('id,naziv')
+      ]);
+
+      if (machines.error) throw new Error(machines.error.message);
+
+      const names = new Map(
+        (machines.data || []).map(machine => [machine.id, machine.naziv])
+      );
+
+      const grouped = new Map();
+
+      function getRow(date, id) {
+        const key = date + '|' + id;
+
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            date,
+            machine: names.get(id) || 'Bager',
+            start: null,
+            end: null,
+            hours: 0,
+            fuel: 0
+          });
+        }
+
+        return grouped.get(key);
+      }
+
+      for (const entry of hours) {
+        const row = getRow(entry.datum, entry.bager_id);
+
+        if (entry.stanje_zacetek != null) {
+          row.start = row.start == null
+            ? num(entry.stanje_zacetek)
+            : Math.min(row.start, num(entry.stanje_zacetek));
+        }
+
+        if (entry.stanje_konec != null) {
+          row.end = row.end == null
+            ? num(entry.stanje_konec)
+            : Math.max(row.end, num(entry.stanje_konec));
+        }
+
+        row.hours += num(entry.opravljene_ure);
+      }
+
+      for (const entry of fuel) {
+        getRow(entry.datum, entry.bager_id).fuel += num(entry.litri);
+      }
+
+      dailyRows = [...grouped.values()].sort((a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.machine.localeCompare(b.machine)
+      );
+
+      if (!dailyRows.length) {
+        report.textContent = 'Za izbrani mesec ni vnosov.';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+
+      const titles = [
+        'Datum', 'Bager', 'Začetek (h)',
+        'Konec (h)', 'Delo (h)', 'Gorivo (L)'
+      ];
+
+      const header = document.createElement('tr');
+
+      for (const title of titles) {
+        const th = document.createElement('th');
+        th.textContent = title;
+        th.style.padding = '7px 4px';
+        th.style.textAlign = 'left';
+        header.appendChild(th);
+      }
+
+      table.appendChild(header);
+
+      for (const row of dailyRows) {
+        const tr = document.createElement('tr');
+
+        const values = [
+          row.date,
+          row.machine,
+          row.start == null ? '—' : fmt(row.start),
+          row.end == null ? '—' : fmt(row.end),
+          fmt(row.hours),
+          fmt(row.fuel)
+        ];
+
+        for (const value of values) {
+          const td = document.createElement('td');
+          td.textContent = value;
+          td.style.padding = '7px 4px';
+          td.style.borderTop = '1px solid #ddd';
+          tr.appendChild(td);
+        }
+
+        table.appendChild(tr);
+      }
+
+      const total = document.createElement('p');
+      total.textContent =
+        'SKUPAJ: ' +
+        fmt(dailyRows.reduce((sum, row) => sum + row.hours, 0)) +
+        ' h | ' +
+        fmt(dailyRows.reduce((sum, row) => sum + row.fuel, 0)) +
+        ' L';
+
+      report.replaceChildren(table, total);
+
+    } catch (error) {
+      report.textContent = 'Napaka: ' + error.message;
+    }
+  }
+
+  csvButton.addEventListener('click', () => {
+    if (!dailyRows.length) {
+      alert('Ni podatkov za izvoz.');
+      return;
+    }
+
+    const lines = [
+      'Datum;Bager;Začetek (h);Konec (h);Delo (h);Gorivo (L)',
+      ...dailyRows.map(row => [
+        row.date,
+        row.machine,
+        row.start == null ? '' : fmt(row.start),
+        row.end == null ? '' : fmt(row.end),
+        fmt(row.hours),
+        fmt(row.fuel)
+      ].join(';'))
+    ];
+
+    const blob = new Blob(
+      ['\uFEFF' + lines.join('\r\n')],
+      { type: 'text/csv;charset=utf-8;' }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download =
+      'Bagerji-dnevna-' + yearSelect.value + '-' +
+      monthSelect.value + '.csv';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  monthSelect.addEventListener('change', loadDailyReport);
+  yearSelect.addEventListener('change', loadDailyReport);
+  machineSelect.addEventListener('change', loadDailyReport);
+
+  el('bagerTab')?.addEventListener('click', loadDailyReport);
+
+  loadDailyReport();
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const site = el('reportSite');
+  const date = el('reportDate');
+  const work = el('reportWork');
+  const quantity = el('reportQuantity');
+  const unit = el('reportUnit');
+  const message = el('siteReportMessage');
+  const history = el('siteReportHistory');
+
+  if (!site || !date || !work || !history) return;
+
+  date.value = new Date().toLocaleDateString('en-CA');
+
+  let sites = [];
+
+  async function loadSites() {
+    const {data: auth} = await client.auth.getUser();
+    if (!auth.user) return;
+
+    const {data, error} = await client
+      .from('gradbisca')
+      .select('id,naziv,naslov')
+      .order('naziv');
+
+    if (error) {
+      message.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    sites = data || [];
+    site.replaceChildren();
+
+    for (const s of sites) {
+      const option = document.createElement('option');
+      option.value = s.id;
+      option.textContent = s.naziv;
+      site.appendChild(option);
+    }
+
+    await loadHistory();
+  }
+
+  async function loadHistory() {
+    history.replaceChildren();
+    if (!site.value) return;
+
+    const {data, error} = await client
+      .from('raportet_gradbisca')
+      .select('datum,opis_dela,kolicina,enota')
+      .eq('gradbisce_id', site.value)
+      .order('datum', {ascending:false});
+
+    if (error) {
+      history.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    if (!data.length) {
+      history.textContent = 'Ni poročil.';
+      return;
+    }
+
+    for (const r of data) {
+      const item = document.createElement('div');
+      item.className = 'card';
+      item.textContent =
+        r.datum + ' | ' + r.opis_dela + ' | ' +
+        (r.kolicina ?? '') + ' ' + (r.enota || '');
+      history.appendChild(item);
+    }
+  }
+
+  el('saveSiteReport').addEventListener('click', async () => {
+    if (!site.value || !date.value || !work.value.trim()) {
+      message.textContent = 'Izpolnite obvezna polja.';
+      return;
+    }
+
+    const {data: auth} = await client.auth.getUser();
+    if (!auth.user) {
+      message.textContent = 'Prijava je potrebna.';
+      return;
+    }
+
+    const {error} = await client
+      .from('raportet_gradbisca')
+      .insert({
+        gradbisce_id: Number(site.value),
+        datum: date.value,
+        opis_dela: work.value.trim(),
+        kolicina: quantity.value
+          ? Number(quantity.value) : null,
+        enota: unit.value,
+        vnesel_id: auth.user.id
+      });
+
+    if (error) {
+      message.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    message.textContent = 'Poročilo shranjeno.';
+    work.value = '';
+    quantity.value = '';
+    await loadHistory();
+  });
+
+  site.addEventListener('change', loadHistory);
+  el('sitesTab')?.addEventListener('click', loadSites);
+
+  loadSites();
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+  const yearEl = el('siteReportYear');
+  const monthEl = el('siteReportMonth');
+  const siteEl = el('siteReportFilter');
+  const output = el('siteMonthlyReport');
+  const csvBtn = el('siteReportCSV');
+
+  if (!yearEl || !monthEl || !siteEl || !output || !csvBtn) return;
+
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const months = [
+    'Januar', 'Februar', 'Marec', 'April',
+    'Maj', 'Junij', 'Julij', 'Avgust',
+    'September', 'Oktober', 'November', 'December'
+  ];
+
+  const currentYear = new Date().getFullYear();
+
+  for (let y = currentYear; y >= 2020; y--) {
+    const option = document.createElement('option');
+    option.value = String(y);
+    option.textContent = String(y);
+    yearEl.appendChild(option);
+  }
+
+  let allReports = [];
+  let sites = [];
+
+  const fmt = n => Number(n || 0).toLocaleString('sl-SI', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  async function loadSites() {
+    const { data, error } = await client
+      .from('gradbisca')
+      .select('id,naziv')
+      .order('naziv');
+
+    if (error) throw error;
+
+    sites = data || [];
+    siteEl.innerHTML = '<option value="">Vsa gradbišča</option>';
+
+    for (const site of sites) {
+      const option = document.createElement('option');
+      option.value = String(site.id);
+      option.textContent = site.naziv;
+      siteEl.appendChild(option);
+    }
+  }
+
+  async function loadReports() {
+    output.textContent = 'Nalaganje evidence...';
+
+    try {
+      const { data: auth } = await client.auth.getUser();
+
+      if (!auth.user) {
+        output.textContent = 'Za ogled evidence je potrebna prijava.';
+        return;
+      }
+
+      const year = Number(yearEl.value);
+      const start = year + '-01-01';
+      const end = (year + 1) + '-01-01';
+
+      let query = client
+        .from('raportet_gradbisca')
+        .select('gradbisce_id,datum,opis_dela,kolicina,enota')
+        .gte('datum', start)
+        .lt('datum', end)
+        .order('datum', { ascending: true });
+
+      if (siteEl.value) {
+        query = query.eq('gradbisce_id', Number(siteEl.value));
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      allReports = (data || []).filter(r => {
+        if (!monthEl.value) return true;
+        return Number(r.datum.slice(5, 7)) === Number(monthEl.value);
+      });
+
+      renderReport();
+    } catch (error) {
+      output.textContent = 'Napaka: ' + error.message;
+    }
+  }
+
+  function renderReport() {
+    output.replaceChildren();
+
+    if (!allReports.length) {
+      output.textContent = 'Za izbrano obdobje ni poročil.';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+
+    const header = document.createElement('tr');
+
+    for (const title of ['Datum', 'Gradbišče', 'Delo', 'Količina', 'Enota']) {
+      const th = document.createElement('th');
+      th.textContent = title;
+      th.style.padding = '8px 4px';
+      th.style.textAlign = 'left';
+      header.appendChild(th);
+    }
+
+    table.appendChild(header);
+
+    for (const r of allReports) {
+      const tr = document.createElement('tr');
+      const site = sites.find(s => String(s.id) === String(r.gradbisce_id));
+
+      const values = [
+        r.datum,
+        site?.naziv || String(r.gradbisce_id),
+        r.opis_dela || '',
+        r.kolicina == null ? '' : fmt(r.kolicina),
+        r.enota || ''
+      ];
+
+      for (const value of values) {
+        const td = document.createElement('td');
+        td.textContent = value;
+        td.style.padding = '8px 4px';
+        td.style.borderTop = '1px solid #ddd';
+        tr.appendChild(td);
+      }
+
+      table.appendChild(tr);
+    }
+
+    output.appendChild(table);
+
+    const summary = document.createElement('p');
+    summary.textContent = 'SKUPAJ POROČIL: ' + allReports.length;
+    output.appendChild(summary);
+
+    const totals = {};
+
+    for (const r of allReports) {
+      if (r.kolicina == null || !r.enota) continue;
+      const unit = r.enota;
+      totals[unit] = (totals[unit] || 0) + Number(r.kolicina);
+    }
+
+    for (const [unit, amount] of Object.entries(totals)) {
+      const p = document.createElement('p');
+      p.textContent = 'SKUPAJ ' + unit + ': ' + fmt(amount);
+      output.appendChild(p);
+    }
+  }
+
+  csvBtn.addEventListener('click', () => {
+    if (!allReports.length) {
+      alert('Ni podatkov za izvoz.');
+      return;
+    }
+
+    const quote = value =>
+      '"' + String(value ?? '').replace(/"/g, '""') + '"';
+
+    const rows = [
+      ['Datum', 'Gradbišče', 'Delo', 'Količina', 'Enota'],
+      ...allReports.map(r => {
+        const site = sites.find(s => String(s.id) === String(r.gradbisce_id));
+
+        return [
+          r.datum,
+          site?.naziv || r.gradbisce_id,
+          r.opis_dela,
+          r.kolicina ?? '',
+          r.enota
+        ];
+      })
+    ];
+
+    const csv = '\uFEFF' + rows
+      .map(row => row.map(quote).join(';'))
+      .join('\r\n');
+
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Gradbisca-evidenca-' + yearEl.value + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  yearEl.addEventListener('change', loadReports);
+  monthEl.addEventListener('change', loadReports);
+  siteEl.addEventListener('change', loadReports);
+
+  el('sitesTab')?.addEventListener('click', async () => {
+    try {
+      await loadSites();
+      await loadReports();
+    } catch (error) {
+      output.textContent = 'Napaka: ' + error.message;
+    }
+  });
+
+  loadSites()
+    .then(loadReports)
+    .catch(error => {
+      output.textContent = 'Napaka: ' + error.message;
+    });
+})();
+</script>
+
+<section id="vozilaView" class="card hidden">
+  <h2>🚐 Vozila – Evidenca</h2>
+
+  <div class="card">
+    <h3>Dodaj vozilo</h3>
+    <input id="voziloNaziv" placeholder="Naziv vozila">
+    <input id="voziloRegistracija" placeholder="Registrska številka">
+    <button type="button" id="dodajVozilo">Dodaj vozilo</button>
+    <div id="seznamVozil"></div>
+  </div>
+
+  <div class="card">
+    <h3>📸 Evidenca kilometrov</h3>
+    <select id="voziloKmIzbira"></select>
+    <input id="voziloKmFoto" type="file" accept="image/*" capture="environment">
+    <p>Fotografija števca kilometrov</p>
+    <button type="button" id="shraniVoziloKm">Shrani kilometre</button>
+  </div>
+
+  <div class="card">
+    <h3>⛽ Gorivo</h3>
+    <select id="voziloGorivoIzbira"></select>
+    <input id="voziloLitri" type="number" step="0.01" placeholder="Litri goriva">
+    <button type="button" id="shraniVoziloGorivo">Shrani gorivo</button>
+  </div>
+
+  <div class="card">
+    <h3>🧽 Čiščenje vozila</h3>
+    <select id="voziloCiscenjeIzbira"></select>
+    <input id="voziloCiscenjeFoto" type="file" accept="image/*" capture="environment" multiple>
+    <button type="button" id="shraniVoziloCiscenje">Potrdi čiščenje</button>
+    <div id="voziloCiscenjeStatus"></div>
+  </div>
+
+  <div class="card">
+    <h3>📊 Evidenca vozil</h3>
+    <div id="vozilaEvidenca"></div>
+  </div>
+</section>
+
+<script>
+(() => {
+  const tab = document.getElementById('vozilaTab');
+  const view = document.getElementById('vozilaView');
+
+  if (!tab || !view) return;
+
+  
+tab.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+    document.querySelectorAll(
+      '#hoursView, #toolsView, #workersView, #sitesView, #bagerView, #vozilaView'
+    ).forEach(section => section.classList.add('hidden'));
+
+    view.classList.remove('hidden');
+
+    document.querySelectorAll(
+      '#hoursTab, #toolsTab, #workersTab, #sitesTab, #bagerTab, #vozilaTab'
+    ).forEach(button => button.classList.remove('active'));
+
+    tab.classList.add('active');
+  });
+})();
+</script>
+
+<script>
+(() => {
+  const el = id => document.getElementById(id);
+
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const naziv = el('voziloNaziv');
+  const registracija = el('voziloRegistracija');
+  const seznam = el('seznamVozil');
+
+  const izbire = [
+    el('voziloKmIzbira'),
+    el('voziloGorivoIzbira'),
+    el('voziloCiscenjeIzbira')
+  ];
+
+  async function naloziVozila() {
+    const { data, error } = await client
+      .from('vozila')
+      .select('id,naziv,registracija')
+      .order('naziv');
+
+    if (error) {
+      seznam.textContent = 'Napaka: ' + error.message;
+      return;
+    }
+
+    seznam.replaceChildren();
+
+    for (const izbira of izbire) {
+      izbira.replaceChildren();
+
+      const prazno = document.createElement('option');
+      prazno.value = '';
+      prazno.textContent = 'Izberite vozilo';
+      izbira.appendChild(prazno);
+    }
+
+    for (const vozilo of data || []) {
+      const ime = vozilo.naziv + ' (' + vozilo.registracija + ')';
+
+      const vrstica = document.createElement('p');
+      vrstica.textContent = ime;
+      seznam.appendChild(vrstica);
+
+      for (const izbira of izbire) {
+        const option = document.createElement('option');
+        option.value = vozilo.id;
+        option.textContent = ime;
+        izbira.appendChild(option);
+      }
+    }
+  }
+
+  el('dodajVozilo').addEventListener('click', async () => {
+    const ime = naziv.value.trim();
+    const tablica = registracija.value.trim().toUpperCase();
+
+    if (!ime || !tablica) {
+      alert('Vnesite naziv in registrsko številko.');
+      return;
+    }
+
+    const { error } = await client
+      .from('vozila')
+      .insert({
+        naziv: ime,
+        registracija: tablica
+      });
+
+    if (error) {
+      alert('Napaka: ' + error.message);
+      return;
+    }
+
+    naziv.value = '';
+    registracija.value = '';
+
+    await naloziVozila();
+    alert('Vozilo uspešno dodano.');
+  });
+
+  el('vozilaTab').addEventListener('click', naloziVozila);
+
+  naloziVozila();
+})();
+</script>
+
+<script>
+(() => {
+  const vozila = document.getElementById('vozilaTab');
+
+  ['hoursTab', 'toolsTab', 'workersTab', 'sitesTab', 'bagerTab']
+    .forEach(id => {
+      const button = document.getElementById(id);
+
+      if (button) {
+        button.addEventListener('click', () => {
+          vozila?.classList.remove('active');
+          document.getElementById('vozilaView')
+            ?.classList.add('hidden');
+        });
+      }
+    });
+})();
+</script>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  $('shraniVoziloKm').addEventListener('click', async () => {
+    const voziloId = $('voziloKmIzbira').value;
+    const foto = $('voziloKmFoto').files[0];
+
+    if (!voziloId || !foto) {
+      alert('Izberite vozilo in fotografirajte števec.');
+      return;
+    }
+
+    const gumb = $('shraniVoziloKm');
+    gumb.disabled = true;
+    gumb.textContent = 'Berem kilometre...';
+
+    try {
+      if (!window.Tesseract) {
+        throw new Error('OCR knjižnica ni naložena.');
+      }
+
+      const rezultat = await Tesseract.recognize(foto, 'eng');
+      const besedilo = rezultat.data.text || '';
+      const stevilke = besedilo.match(/\d[\d\s.,]*/g) || [];
+      const predlog = stevilke
+        .map(x => x.replace(/[^\d]/g, ''))
+        .filter(Boolean)
+        .sort((a, b) => b.length - a.length)[0] || '';
+
+      const vnos = prompt(
+        'Preverite kilometre na fotografiji in potrdite:',
+        predlog
+      );
+
+      if (vnos === null) return;
+
+      const km = Number(vnos.trim().replace(/\s/g, '').replace(',', '.'));
+
+      if (!vnos.trim() || !Number.isFinite(km) || km < 0) {
+        alert('Neveljavno število kilometrov.');
+        return;
+      }
+
+      const {data: seja} = await client.auth.getUser();
+      const uporabnik = seja?.user;
+      if (!uporabnik) throw new Error('Prijava je potrebna.');
+
+      const danes = new Date();
+      const datum = [
+        danes.getFullYear(),
+        String(danes.getMonth() + 1).padStart(2, '0'),
+        String(danes.getDate()).padStart(2, '0')
+      ].join('-');
+
+      const {data: prejsnji, error: napakaBranja} = await client
+        .from('vozila_km')
+        .select('datum,kilometri')
+        .eq('vozilo_id', voziloId)
+        .lt('datum', datum)
+        .order('datum', {ascending: false})
+        .limit(1);
+
+      if (napakaBranja) throw napakaBranja;
+
+      const zadnji = prejsnji?.[0];
+      if (zadnji && km < Number(zadnji.kilometri)) {
+        alert('Kilometri so manjši od prejšnjega stanja.');
+        return;
+      }
+
+      const {error} = await client.from('vozila_km').insert({
+        vozilo_id: Number(voziloId),
+        datum,
+        kilometri: km,
+        vnesel_id: uporabnik.id
+      });
+
+      if (error) throw error;
+
+      const razlika = zadnji
+        ? km - Number(zadnji.kilometri)
+        : null;
+
+      alert(
+        'Kilometri shranjeni: ' + km +
+        (razlika === null
+          ? '\nPrvi vnos.'
+          : '\nOd prejšnjega vnosa: ' + razlika + ' km.')
+      );
+
+      $('voziloKmFoto').value = '';
+    } catch (napaka) {
+      alert('Napaka: ' + napaka.message);
+    } finally {
+      gumb.disabled = false;
+      gumb.textContent = 'Shrani kilometre';
+    }
+  });
+})();
+</script>
+
+<script>
+(() => {
+  const client = window.supabase.createClient(
+    'https://zofclcgkgwfsjrcewfml.supabase.co',
+    'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+  );
+
+  const tabela = document.getElementById('vozilaEvidenca');
+  const tab = document.getElementById('vozilaTab');
+
+  async function prikaziEvidenco() {
+    tabela.textContent = 'Nalagam evidenco kilometrov...';
+
+    const [vozila, vnosi] = await Promise.all([
+      client.from('vozila').select('id,naziv,registracija'),
+      client.from('vozila_km')
+        .select('vozilo_id,datum,kilometri')
+        .order('datum', {ascending: true})
+        .order('id', {ascending: true})
+    ]);
+
+    if (vozila.error || vnosi.error) {
+      tabela.textContent = 'Napaka: ' +
+        (vozila.error?.message || vnosi.error?.message);
+      return;
+    }
+
+    const imena = new Map(
+      (vozila.data || []).map(v => [
+        v.id, v.naziv + ' (' + v.registracija + ')'
+      ])
+    );
+
+    const zadnjiKm = new Map();
+    const zapisi = (vnosi.data || []).map(v => {
+      const prejsnji = zadnjiKm.get(v.vozilo_id);
+      const razlika = prejsnji === undefined
+        ? 'Prvi vnos'
+        : (Number(v.kilometri) - prejsnji) + ' km';
+
+      zadnjiKm.set(v.vozilo_id, Number(v.kilometri));
+
+      return {
+        datum: v.datum,
+        vozilo: imena.get(v.vozilo_id) || v.vozilo_id,
+        kilometri: v.kilometri,
+        razlika
+      };
+    }).reverse();
+
+    tabela.replaceChildren();
+
+    if (!zapisi.length) {
+      tabela.textContent = 'Ni shranjenih kilometrov.';
+      return;
+    }
+
+    const pregled = document.createElement('div');
+    pregled.style.overflowX = 'auto';
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+
+    const head = document.createElement('tr');
+    ['Datum', 'Vozilo', 'Števec (km)', 'Prevoženo']
+      .forEach(naziv => {
+        const th = document.createElement('th');
+        th.textContent = naziv;
+        head.appendChild(th);
+      });
+    table.appendChild(head);
+
+    zapisi.forEach(v => {
+      const tr = document.createElement('tr');
+      [v.datum, v.vozilo, v.kilometri, v.razlika]
+        .forEach(podatek => {
+          const td = document.createElement('td');
+          td.textContent = podatek;
+          td.style.padding = '8px';
+          tr.appendChild(td);
+        });
+      table.appendChild(tr);
+    });
+
+    pregled.appendChild(table);
+    tabela.appendChild(pregled);
+  }
+
+  tab.addEventListener('click', prikaziEvidenco);
+
+  document.getElementById('shraniVoziloKm')
+    .addEventListener('click', () => {
+      setTimeout(prikaziEvidenco, 1500);
+    });
+
+  prikaziEvidenco();
+})();
+</script>
+<script>
+(async function () {
+  const btn = document.getElementById('saveBager');
+  const msg = document.getElementById('bagerMessage');
+
+  if (!btn) return;
+
+  
+const db = window.supabase.createClient(
+  'https://zofclcgkgwfsjrcewfml.supabase.co',
+  'sb_publishable_s_F7X1QzEaBUhbQ4WL4QTQ_HEkhEFEQ'
+);
+
+
+  btn.addEventListener('click', async () => {
+    const bager_id = document.getElementById('bagerSelect').value;
+    const datum = document.getElementById('bagerDate').value;
+    const start = Number(document.getElementById('bagerStart').value);
+    const end = Number(document.getElementById('bagerEnd').value);
+
+    if (!bager_id || !datum || end < start) {
+      msg.textContent = 'Preverite bager, datum in stanje ur.';
+      return;
+    }
+
+    const { error } = await db.from('bager_ure').insert({
+      bager_id,
+      datum,
+      stanje_zacetek: start,
+      stanje_konec: end,
+      opravljene_ure: end - start
+    });
+
+    msg.textContent = error
+      ? 'Napaka: ' + error.message
+      : 'Evidenca uspešno shranjena!';
+  });
+})();
+</script>
+  
+
+<script>
+(function () {
+  'use strict';
+
+  const el = id => document.getElementById(id);
+
+  if (el('izmereTab')) return;
+
+  const tab = document.createElement('button');
+  tab.id = 'izmereTab';
+  tab.textContent = '📐 Izmere';
+  el('vozilaTab').after(tab);
+
+  const view = document.createElement('section');
+  view.id = 'izmereView';
+  view.className = 'card hidden';
+
+  view.innerHTML = `
+    <h2>📐 Izmere – Obračun del</h2>
+
+    <div class="row">
+      <label>Gradbišče
+        <select id="izSite"></select>
+      </label>
+      <label>Ekipa
+        <select id="izTeam"></select>
+      </label>
+      <label>Datum
+        <input id="izDate" type="date">
+      </label>
+      <label>Segment št.
+        <input id="izSegment" type="number"
+          min="1" step="1" value="1">
+      </label>
+    </div>
+
+    <h3>Vrste del</h3>
+    <p>Izberite vse vrste del, opravljene
+       na istem segmentu.</p>
+
+    <label><input type="checkbox" id="izKanal">
+      📏 Kanal – m</label>
+    <label><input type="checkbox" id="izAsfalt">
+      🛣️ Asfalt – m²</label>
+    <label><input type="checkbox" id="izTlakovci">
+      🧱 Tlakovci – m²</label>
+    <label><input type="checkbox" id="izTampon">
+      🪨 Tampon – m³</label>
+
+    <div class="row">
+      <label>Dolžina (m)
+        <input id="izLength" type="number"
+          min="0" step="any">
+      </label>
+      <label>Širina (m)
+        <input id="izWidth" type="number"
+          min="0" step="any">
+      </label>
+      <label>Debelina (m)
+        <input id="izDepth" type="number"
+          min="0" step="any">
+      </label>
+    </div>
+
+    <small>
+      Za kanal se uporablja dolžina.
+      Za asfalt in tlakovce dolžina × širina.
+      Za tampon dolžina × širina × debelina.
+      Za različne širine vnesite ločene segmente.
+    </small>
+
+    <label>Opomba
+      <textarea id="izNote" rows="3"
+        placeholder="Opis del in posebnosti"></textarea>
+    </label>
+
+    <button id="izCalculate" type="button">
+      🧮 Izračunaj
+    </button>
+
+    <div id="izPreview"></div>
+
+    <button id="izSave" type="button">
+      💾 Shrani izmere
+    </button>
+
+    <p id="izMessage" class="msg"
+       role="status"></p>
+
+    <hr>
+
+    <h3>📋 Evidenca izmer</h3>
+    <button id="izReload" type="button">
+      🔄 Osveži
+    </button>
+    <button id="izCSV" type="button">
+      📊 Izvoz CSV (Excel)
+    </button>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Gradbišče</th>
+            <th>Ekipa</th>
+            <th>Segment</th>
+            <th>Delo</th>
+            <th>Količina</th>
+            <th>Status</th>
+            <th>Potrditev</th>
+          </tr>
+        </thead>
+        <tbody id="izRows"></tbody>
+      </table>
+    </div>
+  `;
+
+  el('app').append(view);
+  el('izDate').value = date();
+
+  const notice = text =>
+    el('izMessage').textContent = text;
+
+  const fmt = number =>
+    Number(number).toLocaleString('sl-SI', {
+      maximumFractionDigits: 3
+    });
+
+  const types = [
+    ['izKanal', 'kanal', 'm'],
+    ['izAsfalt', 'asfalt', 'm2'],
+    ['izTlakovci', 'tlakovci', 'm2'],
+    ['izTampon', 'tampon', 'm3']
+  ];
+
+  let sites = [];
+  let history = [];
+
+  function option(select, value, label) {
+    const item = document.createElement('option');
+    item.value = value;
+    item.textContent = label;
+    select.append(item);
+  }
+
+  async function loadChoices() {
+    if (!user) throw Error('Prijava je potrebna.');
+
+    const result = await db.from('gradbisca')
+      .select('id,naziv')
+      .order('naziv');
+
+    if (result.error) throw result.error;
+    sites = result.data || [];
+
+    const previousSite = el('izSite').value;
+    el('izSite').replaceChildren();
+    option(el('izSite'), '', 'Izberite gradbišče');
+
+    sites.forEach(s =>
+      option(el('izSite'), s.id, s.naziv)
+    );
+
+    if (sites.some(s =>
+      String(s.id) === previousSite
+    )) el('izSite').value = previousSite;
+
+    const previousTeam = el('izTeam').value;
+    el('izTeam').replaceChildren();
+    option(el('izTeam'), '', 'Izberite ekipo');
+
+    teams.forEach(t =>
+      option(el('izTeam'), t.id, t.naziv)
+    );
+
+    if (teams.some(t =>
+      String(t.id) === previousTeam
+    )) {
+      el('izTeam').value = previousTeam;
+    } else if (teams.length === 1) {
+      el('izTeam').value = teams[0].id;
+    }
+  }
+
+  function calculate() {
+    const length = Number(el('izLength').value);
+    const width = Number(el('izWidth').value);
+    const depth = Number(el('izDepth').value);
+
+    const selected = types.filter(
+      t => el(t[0]).checked
+    );
+
+    if (!selected.length)
+      throw Error('Izberite vsaj eno vrsto dela.');
+
+    if (!el('izLength').value ||
+        !Number.isFinite(length) || length <= 0)
+      throw Error('Vnesite veljavno dolžino.');
+
+    const rows = [];
+
+    for (const [checkbox, type, unit] of selected) {
+      let quantity = length;
+
+      if (unit === 'm2' || unit === 'm3') {
+        if (!el('izWidth').value ||
+            !Number.isFinite(width) || width <= 0)
+          throw Error('Vnesite veljavno širino.');
+
+        quantity *= width;
+      }
+
+      if (unit === 'm3') {
+        if (!el('izDepth').value ||
+            !Number.isFinite(depth) || depth <= 0)
+          throw Error('Vnesite veljavno debelino.');
+
+        quantity *= depth;
+      }
+
+      rows.push({
+        vrsta: type,
+        dolzina: length,
+        sirina: unit === 'm' ? null : width,
+        debelina: unit === 'm3' ? depth : null,
+        kolicina: Math.round(quantity * 1000) / 1000,
+        enota: unit
+      });
+    }
+
+    return rows;
+  }
+
+  function preview() {
+    try {
+      const rows = calculate();
+      el('izPreview').replaceChildren();
+
+      rows.forEach(r => {
+        const p = document.createElement('p');
+        p.textContent =
+          r.vrsta.toUpperCase() + ': ' +
+          fmt(r.kolicina) + ' ' +
+          r.enota.replace('m2', 'm²')
+            .replace('m3', 'm³');
+
+        el('izPreview').append(p);
+      });
+
+      notice('Izračun pripravljen. Za shranjevanje pritisnite Shrani izmere.');
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    }
+  }
+
+  async function save() {
+    const button = el('izSave');
+
+    try {
+      if (!user) throw Error('Prijava je potrebna.');
+
+      const team = teams.find(t =>
+        String(t.id) === el('izTeam').value
+      );
+
+      const site = sites.find(s =>
+        String(s.id) === el('izSite').value
+      );
+
+      if (!team || !site)
+        throw Error('Izberite gradbišče in ekipo.');
+
+      const datum = el('izDate').value;
+      if (!datum || datum > date())
+        throw Error('Preverite datum.');
+
+      const segment = Number(el('izSegment').value);
+      if (!Number.isSafeInteger(segment) || segment < 1)
+        throw Error('Neveljavna številka segmenta.');
+
+      const calculated = calculate();
+
+      if (!confirm(
+        'Shraniti ' + calculated.length +
+        ' izmer za gradbišče ' + site.naziv + '?'
+      )) return;
+
+      button.disabled = true;
+
+      const scanId = crypto.randomUUID();
+      const note = el('izNote').value.trim();
+
+      const payload = calculated.map(r => ({
+        ...r,
+        gradbisce_id: site.id,
+        ekipa_id: team.id,
+        vnesel_id: user.id,
+        datum,
+        segment_nr: segment,
+        skanim_id: scanId,
+        nacin: 'rocno',
+        burimi_matjes: 'rocno',
+        opomba: note || null
+      }));
+
+      const {error} = await db
+        .from('izmere')
+        .insert(payload);
+
+      if (error) throw error;
+
+      notice(
+        '✅ Shranjeno: ' +
+        calculated.length + ' izmer.'
+      );
+
+      el('izNote').value = '';
+      el('izPreview').replaceChildren();
+      types.forEach(t => el(t[0]).checked = false);
+      el('izSegment').value = String(segment + 1);
+
+      await loadHistory();
+
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function loadHistory() {
+    if (!user) return;
+
+    const body = el('izRows');
+    body.replaceChildren();
+    history = [];
+
+    let query = db.from('izmere')
+      .select('id,datum,gradbisce_id,ekipa_id,segment_nr,vrsta,kolicina,enota,status')
+      .order('datum', {ascending:false})
+      .order('id', {ascending:false})
+      .limit(500);
+
+    if (!admin()) {
+      if (!teams.length) return;
+      query = query.in(
+        'ekipa_id',
+        teams.map(t => t.id)
+      );
+    }
+
+    const {data,error} = await query;
+    if (error) {
+      notice('Napaka pri branju: ' + error.message);
+      return;
+    }
+
+    history = data || [];
+
+    for (const r of history) {
+      const tr = document.createElement('tr');
+
+      const site = sites.find(s =>
+        String(s.id) === String(r.gradbisce_id)
+      );
+
+      const team = teams.find(t =>
+        String(t.id) === String(r.ekipa_id)
+      );
+
+      const values = [
+        r.datum,
+        site?.naziv || r.gradbisce_id,
+        team?.naziv || r.ekipa_id,
+        r.segment_nr ?? '—',
+        r.vrsta,
+        fmt(r.kolicina) + ' ' +
+          String(r.enota).replace('m2','m²')
+            .replace('m3','m³'),
+        r.status || 'V preverjanju'
+      ];
+
+      values.forEach(value => {
+        const td = document.createElement('td');
+        td.textContent = String(value ?? '');
+        tr.append(td);
+      });
+
+      const actions = document.createElement('td');
+
+      if (admin() && r.status !== 'potrjeno') {
+        const button = document.createElement('button');
+        button.textContent = '✅ Potrdi';
+        button.onclick = () => confirmMeasure(r.id);
+        actions.append(button);
+      } else {
+        actions.textContent =
+          r.status === 'potrjeno'
+            ? '✅ Potrjeno'
+            : 'Čaka na potrditev';
+      }
+
+      tr.append(actions);
+      body.append(tr);
+    }
+
+    if (!history.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 8;
+      td.textContent = 'Ni shranjenih izmer.';
+      tr.append(td);
+      body.append(tr);
+    }
+  }
+
+  async function confirmMeasure(id) {
+    if (!admin() || !user) return;
+
+    if (!confirm('Potrdite to izmero?')) return;
+
+    try {
+      const {data,error} = await db
+        .from('izmere')
+        .update({
+          status: 'potrjeno',
+          potrjeno_od: user.id,
+          potrjeno_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .neq('status', 'potrjeno')
+        .select('id');
+
+      if (error) throw error;
+      if (!data?.length)
+        throw Error('Izmera ni bila posodobljena.');
+
+      notice('✅ Izmera potrjena.');
+      await loadHistory();
+
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    }
+  }
+
+  function exportCSV() {
+    if (!history.length) {
+      alert('Ni podatkov za izvoz.');
+      return;
+    }
+
+    const rows = [
+      ['Datum','Gradbišče','Ekipa','Segment',
+       'Delo','Količina','Enota','Status']
+    ];
+
+    history.forEach(r => {
+      rows.push([
+        r.datum,
+        sites.find(s =>
+          String(s.id) === String(r.gradbisce_id)
+        )?.naziv || r.gradbisce_id,
+        teams.find(t =>
+          String(t.id) === String(r.ekipa_id)
+        )?.naziv || r.ekipa_id,
+        r.segment_nr ?? '',
+        r.vrsta,
+        r.kolicina,
+        r.enota,
+        r.status || ''
+      ]);
+    });
+
+    const csv = '\uFEFF' + rows.map(row =>
+      row.map(value =>
+        '"' + String(value ?? '')
+          .replace(/"/g, '""') + '"'
+      ).join(';')
+    ).join('\r\n');
+
+    const url = URL.createObjectURL(
+      new Blob([csv], {
+        type: 'text/csv;charset=utf-8'
+      })
+    );
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'SYLAJ-Izmere-' + date() + '.csv';
+    a.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  el('izCalculate').onclick = preview;
+  el('izSave').onclick = save;
+  el('izReload').onclick = loadHistory;
+  el('izCSV').onclick = exportCSV;
+
+  // Ob preklopu na druge zavihke skrij Izmere.
+  document.querySelectorAll(
+    '#hoursTab,#toolsTab,#workersTab,#sitesTab,' +
+    '#bagerTab,#vozilaTab,#ratingsTab,#gpsTab'
+  ).forEach(button => {
+    button.addEventListener('click', () => {
+      view.classList.add('hidden');
+      tab.classList.remove('active');
+    });
+  });
+
+  tab.onclick = async () => {
+    if (!user) return;
+
+    document.querySelectorAll(
+      '#hoursView,#toolsView,#workersView,' +
+      '#sitesView,#bagerView,#vozilaView,' +
+      '#ratingsView,#gpsView,#izmereView'
+    ).forEach(section =>
+      section.classList.add('hidden')
+    );
+
+    document.querySelectorAll(
+      '#hoursTab,#toolsTab,#workersTab,' +
+      '#sitesTab,#bagerTab,#vozilaTab,' +
+      '#ratingsTab,#gpsTab,#izmereTab'
+    ).forEach(button =>
+      button.classList.remove('active')
+    );
+
+    view.classList.remove('hidden');
+    tab.classList.add('active');
+
+    try {
+      await loadChoices();
+      await loadHistory();
+    } catch (e) {
+      notice('Napaka: ' + e.message);
+    }
+  };
+})();
+</script>
+
+<script>
+(() => {
+  const icons = {
+    hoursTab: '👷',
+    toolsTab: '🛠️',
+    workersTab: '👥',
+    sitesTab: '🏗️',
+    bagerTab: '🚜',
+    vozilaTab: '🚐',
+    ratingsTab: '⭐',
+    gpsTab: '📍',
+    izmereTab: '📐',
+    loginBtn: '🔐',
+    logout: '🚪',
+    start: '▶️',
+    end: '⏹️',
+    saveManual: '💾',
+    refresh: '🔄',
+    export: '📊',
+    addWorker: '➕',
+    reloadWorkers: '🔄',
+    takeTool: '🛠️',
+    refreshTools: '🔄',
+    saveReturnPhotos: '📸',
+    addSite: '🏗️',
+    saveSiteReport: '📝',
+    siteReportCSV: '📊',
+    addBager: '🚜',
+    saveBager: '💾',
+    saveService: '🔧',
+    bagerReportCSV: '📊',
+    bagerDailyCSV: '📊',
+    dodajVozilo: '🚐',
+    shraniVoziloKm: '🛣️',
+    shraniVoziloGorivo: '⛽',
+    shraniVoziloCiscenje: '🧽',
+    izmeraIzracunaj: '🧮',
+    ratingSave: '⭐',
+    ratingReload: '🔄',
+    gpsStart: '▶️',
+    gpsStop: '⏹️',
+    gpsRefresh: '🔄',
+    gpsMapRefresh: '🗺️',
+    saveNewTool: '💾',
+    recognizeToolAI: '🤖'
+  };
+
+  function applyIcons() {
+    for (const [id, icon] of Object.entries(icons)) {
+      const button = document.getElementById(id);
+      if (!button || button.dataset.iconAdded) continue;
+
+      button.textContent = icon + ' ' +
+        button.textContent.replace(
+          /^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u,
+          ''
+        ).trim();
+
+      button.dataset.iconAdded = 'true';
+    }
+  }
+
+  applyIcons();
+  new MutationObserver(applyIcons).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+})();
+</script>
+<script src="./sylaj-pamja.js"></script>
+  <script src="./sylaj-walk-scan.js"></script>
+<script src="./sylaj-gps-matje.js?v=7"></script>
+  <script src="./sylaj-auto-matje.js?v=1"></script>
+<script>
+/* SYLAJ – admin pregled, varno brisanje, obnovitev in revizijska zgodovina */
+(function(){
+'use strict';
+const EDIT_FIELDS = {"delovne_ure": ["datum", "zacetek", "konec", "opomba"], "delavci": ["ime_priimek", "aktiven"], "orodja": ["naziv", "znamka", "model", "serijska_stevilka", "interna_oznaka", "opis"], "evidenca_orodja": ["opombe", "stanje_ob_prevzemu", "stanje_ob_vracilu"], "gradbisca": ["naziv", "naslov"], "raportet_gradbisca": ["datum", "opis_dela", "kolicina", "enota"], "bagerji": ["naziv", "registrska_oznaka", "opis"], "bager_ure": ["datum", "stanje_zacetek", "stanje_konec", "opomba"], "bager_gorivo": ["datum", "litri", "opomba"], "bager_servisi": ["datum", "stanje_ur", "vrsta_servisa", "opis", "stroski", "naslednji_servis_ure"], "vozila": ["naziv", "registracija"], "vozila_km": ["datum", "kilometri"], "ocene_delavcev": ["datum", "opravljeno_delo", "opomba", "ocena"], "izmere": ["datum", "vrsta", "dolzina", "sirina", "debelina", "kolicina", "enota", "opomba"]};
+const tables=Object.keys(EDIT_FIELDS);
+const panel=document.createElement('section');
+panel.id='sylajAuditView';panel.className='card hidden';
+panel.innerHTML='<h2>📋 Upravljanje in zgodovina</h2><p>Administrator: pregled zapisov, popravljanje, varno brisanje in obnovitev.</p><div class="row"><label>Tabela<select id="sylajAuditTable"></select></label><label>Prikaz<select id="sylajAuditState"><option value="active">Aktivni</option><option value="deleted">Izbrisani</option></select></label><button id="sylajAuditRefresh" type="button">Osveži</button></div><p id="sylajAuditMessage" class="msg"></p><div id="sylajAuditRecords" class="scroll"></div><h3>Zgodovina sprememb</h3><div id="sylajAuditHistory" class="scroll"></div>';
+const tab=document.createElement('button');tab.id='sylajAuditTab';tab.textContent='📋 Zgodovina / Popravi';tab.className='hidden';
+const nav=document.querySelector('#app .row:nth-child(2)');
+if(nav)nav.append(tab);
+const app=document.getElementById('app');if(app)app.append(panel);
+const select=panel.querySelector('#sylajAuditTable');
+for(const name of tables){const o=document.createElement('option');o.value=name;o.textContent=name;select.append(o)}
+const el=id=>document.getElementById(id);
+const status=s=>{el('sylajAuditMessage').textContent=s};
+const isAdmin=()=>typeof admin==='function' && admin() && !!user;
+const showPanel=()=>{
+ if(!isAdmin())return;
+ document.querySelectorAll('#hoursView,#toolsView,#workersView,#sitesView,#bagerView,#vozilaView,#ratingsView,#izmereView').forEach(x=>x.classList.add('hidden'));
+ document.querySelectorAll('#app button.active').forEach(x=>x.classList.remove('active'));
+ panel.classList.remove('hidden');tab.classList.add('active');load();
+};
+// Other tabs hide the audit panel without changing their existing behavior.
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b!==tab && b.closest('#app') && b.parentElement && b.parentElement.contains(tab)){
+   panel.classList.add('hidden');tab.classList.remove('active');
+ }
+},true);
+tab.onclick=showPanel;
+const originalLogin=el('loginBtn');
+if(originalLogin)originalLogin.addEventListener('click',()=>setTimeout(()=>{tab.classList.toggle('hidden',!isAdmin())},1200));
+const originalLogout=el('logout');
+if(originalLogout)originalLogout.addEventListener('click',()=>{tab.classList.add('hidden');panel.classList.add('hidden')});
+const cell=(tr,value)=>{const td=document.createElement('td');td.textContent=String(value??'');td.style.maxWidth='220px';td.style.overflow='hidden';td.style.textOverflow='ellipsis';tr.append(td);return td};
+const button=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.type='button';b.onclick=fn;return b};
+async function load(){
+ if(!isAdmin())return;
+ const table=select.value,deleted=el('sylajAuditState').value==='deleted';
+ status('Nalaganje ...');
+ try{
+  const [r,h]=await Promise.all([
+    db.from(table).select('*').is('izbrisano_at',null).order('id',{ascending:false}).limit(100),
+    db.from('sylaj_zgodovina').select('id,tabela,zapis_id,dejanje,uporabnik_id,cas').eq('tabela',table).order('id',{ascending:false}).limit(50)
+  ]);
+  // Explicit null/not-null query: separate query for deleted records.
+  let records=r;
+  if(deleted)records=await db.from(table).select('*').not('izbrisano_at','is',null).order('id',{ascending:false}).limit(100);
+  if(records.error)throw records.error;
+  if(h.error)throw h.error;
+  const area=el('sylajAuditRecords');area.replaceChildren();
+  const t=document.createElement('table'),thead=document.createElement('thead'),tr=document.createElement('tr');
+  for(const name of ['ID',...EDIT_FIELDS[table],'Dejanje']){const th=document.createElement('th');th.textContent=name;tr.append(th)}thead.append(tr);t.append(thead);
+  const tbody=document.createElement('tbody');
+  for(const record of records.data||[]){
+   const row=document.createElement('tr');cell(row,record.id);
+   for(const name of EDIT_FIELDS[table])cell(row,record[name]);
+   const actions=document.createElement('td');
+   if(!deleted){actions.append(button('✏️ Popravi',()=>edit(table,record)));actions.append(button('🗑️ Izbriši',()=>softDelete(table,record.id)))}
+   else actions.append(button('↩️ Razveljavi',()=>restore(table,record.id)));
+   row.append(actions);tbody.append(row);
+  }
+  t.append(tbody);area.append(t);
+  const hist=el('sylajAuditHistory');hist.replaceChildren();
+  const ht=document.createElement('table'),head=document.createElement('tr');
+  for(const x of ['Čas','Dejanje','ID zapisa','Uporabnik']){const th=document.createElement('th');th.textContent=x;head.append(th)}ht.append(head);
+  for(const e of h.data||[]){const row=document.createElement('tr');
+    for(const v of [new Date(e.cas).toLocaleString('sl-SI'),e.dejanje,e.zapis_id,e.uporabnik_id])cell(row,v);
+    ht.append(row);
+  }hist.append(ht);
+  status('Prikazanih '+(records.data||[]).length+' zapisov (največ 100).');
+ }catch(e){status('Napaka: '+e.message)}
+}
+async function edit(table,record){
+ if(!isAdmin())return;
+ const changes={};
+ for(const name of EDIT_FIELDS[table]){
+  const old=record[name];const v=prompt('Popravi '+name,old===null?'':String(old));
+  if(v===null)return;
+  if(v!==String(old??'')){
+   if(typeof old==='number'){if(v.trim()===''||!Number.isFinite(Number(v)))return alert('Neveljavno število: '+name);changes[name]=Number(v)}
+   else if(typeof old==='boolean'){if(!['true','false'].includes(v.toLowerCase()))return alert('Vnesite true ali false');changes[name]=v.toLowerCase()==='true'}
+   else changes[name]=v===''?null:v;
+  }
+ }
+ if(!Object.keys(changes).length)return;
+ if(!confirm('Shraniti spremembe zapisa '+record.id+'?'))return;
+ const {data,error}=await db.from(table).update(changes).eq('id',record.id).is('izbrisano_at',null).select('id');
+ if(error)return status('Napaka: '+error.message);
+ if(!data?.length)return status('Sprememba ni bila dovoljena ali zapis ni bil najden.');
+ await load();
+}
+async function softDelete(table,id){
+ if(!isAdmin()||!confirm('Varno izbrisati zapis '+id+' iz '+table+'?'))return;
+ const {error}=await db.rpc('sylaj_varno_izbrisi',{p_tabela:table,p_id:String(id)});
+ if(error)return status('Napaka: '+error.message);await load();
+}
+async function restore(table,id){
+ if(!isAdmin()||!confirm('Obnoviti zapis '+id+'?'))return;
+ const {error}=await db.rpc('sylaj_razveljavi_izbris',{p_tabela:table,p_id:String(id)});
+ if(error)return status('Napaka: '+error.message);await load();
+}
+el('sylajAuditRefresh').onclick=load;select.onchange=load;el('sylajAuditState').onchange=load;
+// Keep the button visible after the existing asynchronous login completes.
+new MutationObserver(()=>{if(!app.classList.contains('hidden'))tab.classList.toggle('hidden',!isAdmin())}).observe(app,{attributes:true,attributeFilter:['class']});
+})();
+</script>
+
+<style>
+/* SYLAJ dashboard: one menu, no duplicate old navigation */
+body{background:radial-gradient(ellipse at 95% 0%,#b4dfff 0%,transparent 38%),linear-gradient(150deg,#eaf5ff,#d2e9ff 48%,#eaf3ff);color:#102b48}
+#sylajDashboard{padding:27px 24px 30px;background:linear-gradient(135deg,#071f3b,#0c4e80 52%,#087fae);border-radius:24px;box-shadow:0 15px 36px #083b6838}
+#sylajDashboard .dash-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+#sylajDashboard .dash-account{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#e3f4ff;font-weight:600}
+#sylajDashboard #who{color:#e3f4ff;font-size:14px}
+#sylajDashboard #logout{background:#e8f5ff;color:#0a3a64;border:0;border-radius:11px}
+#sylajDashboard .dash-tile{background:#f8fcff;border-radius:18px;min-height:132px;color:#123e64}
+#sylajDashboard .dash-tile:hover{background:#d9f4ff}
+#sylajDashboard .dash-emoji{border-radius:16px}
+#app>.sylaj-old-menu{display:none!important}
+#sylajDashboard .dash-tile[hidden]{display:none!important}
+@media(max-width:640px){#sylajDashboard .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}#sylajDashboard .dash-tile{min-height:119px;font-size:13px}#sylajDashboard{padding:23px 15px}}
+</style>
+<script>
+/* Single interactive menu; original buttons remain in DOM for existing handlers. */
+(function(){
+'use strict';
+const app=document.getElementById('app');if(!app)return;
+const oldMenu=app.querySelector(':scope > section.card');
+const dash=document.createElement('section');dash.id='sylajDashboard';dash.className='card';
+dash.innerHTML='<div class="dash-top"><div><h2>🚜 SYLAJ – Pregled</h2><p class="dash-sub">Evidenca dela, strojev in opreme • vse na enem mestu</p></div><div class="dash-account" id="dashAccount"></div></div><div class="dash-grid" id="sylajDashGrid"></div>';
+app.prepend(dash);
+if(oldMenu){
+ const who=oldMenu.querySelector('#who'),logout=oldMenu.querySelector('#logout');
+ if(who)dash.querySelector('#dashAccount').append(who);
+ if(logout)dash.querySelector('#dashAccount').append(logout);
+ oldMenu.classList.add('sylaj-old-menu');
+}
+const items=[
+ ['🕒','Delovne ure','hoursTab'],['🛠️','Orodja','toolsTab'],['👷','Delavci','workersTab'],
+ ['🏗️','Gradbišča','sitesTab'],['🚜','Bagerji','bagerTab'],['🚐','Vozila','vozilaTab'],
+ ['📐','Izmere','izmereTab'],['⭐','Ocene','ratingsTab'],['📍','GPS','gpsTab'],
+ ['📋','Zgodovina / Popravi','sylajAuditTab']
+];
+for(const [emoji,label,id] of items){
+ const button=document.createElement('button');button.type='button';button.className='dash-tile';button.dataset.target=id;
+ const icon=document.createElement('span');icon.className='dash-emoji';icon.textContent=emoji;
+ const caption=document.createElement('span');caption.textContent=label;button.append(icon,caption);
+ button.addEventListener('click',()=>{
+  const target=document.getElementById(id);
+  if(!target){alert('Modul '+label+' še ni na voljo.');return}
+  target.click();
+  const active=document.querySelector('#sylajAuditView:not(.hidden),#hoursView:not(.hidden),#toolsView:not(.hidden),#workersView:not(.hidden),#sitesView:not(.hidden),#bagerView:not(.hidden),#vozilaView:not(.hidden),#izmereView:not(.hidden),#ratingsView:not(.hidden),#gpsView:not(.hidden)');
+  if(active)active.scrollIntoView({behavior:'smooth',block:'start'});
+ });
+ dash.querySelector('#sylajDashGrid').append(button);
+}
+function refresh(){
+ const audit=dash.querySelector('[data-target="sylajAuditTab"]');
+ if(audit){const tab=document.getElementById('sylajAuditTab');audit.hidden=!(tab&&!tab.classList.contains('hidden'));}
+ for(const b of dash.querySelectorAll('[data-target]')){
+  if(b.dataset.target==='sylajAuditTab')continue;
+  b.hidden=!document.getElementById(b.dataset.target);
+ }
+ for(const el of app.querySelectorAll('h1,h2,h3')){
+  if(el.closest('#sylajDashboard'))continue;
+  if(/SYLAJ\s*[–-]\s*Pregled/i.test(el.textContent||'')){
+   const section=el.closest('section.card')||el.closest('.card');
+   if(section&&section!==dash)section.style.display='none';
+  }
+ }
+}
+refresh();
+new MutationObserver(refresh).observe(app,{childList:true,subtree:true});
+})();
+</script>
+</body></html>

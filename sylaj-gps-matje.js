@@ -73,6 +73,15 @@
     else status(data);
   };
   window.addEventListener('pagehide',()=>{if(watch!==null)navigator.geolocation.clearWatch(watch);});
-  const mount=()=>{const v=get('izmereView');if(v&&!v.contains(el))v.append(el);};
+const mount = () => {
+  const camera = document.getElementById('sylajWalkScan');
+  const izmere = document.getElementById('izmereView');
+  const target = camera || izmere;
+
+  if (target && !target.contains(el)) {
+    target.appendChild(el);
+  }
+};
+
   mount();new MutationObserver(mount).observe(document.body,{childList:true,subtree:true});
 })();

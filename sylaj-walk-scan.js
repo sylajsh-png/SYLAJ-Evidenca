@@ -1,3 +1,4 @@
+
 /* SYLAJ - Kamera dhe matjet */
 (() => {
   'use strict';
@@ -31,6 +32,15 @@
     </label>
     <div id="wsPictures"></div>
 
+    <h3>🚶 Merjenje poti z GPS (približno)</h3>
+    <p>GPS na telefonu ni dovolj natančen za obračun ozkih kanalov. Rezultat preverite z merilnim trakom.</p>
+    <label>Največja dovoljena GPS napaka (m)
+      <input id="wsAccuracy" type="number" min="1" max="100" value="10" step="1">
+    </label>
+    <button type="button" id="wsTrackStart">▶️ Začni meriti pot</button>
+    <button type="button" id="wsTrackStop">⏹️ Končaj merjenje</button>
+    <button type="button" id="wsTrackApply">↳ Prenesi dolžino v postavko</button>
+    <p id="wsTrackStatus" role="status">GPS meritev ni začeta.</p>
     <h3>📐 Dodaj postavko</h3>
 
     <label>Vrsta dela
@@ -70,7 +80,7 @@
     <p id="wsStatus" role="status"></p>
     <small>
       Dimenzije je treba preveriti na terenu.
-      AI in LiDAR še nista aktivna.
+      AI in LiDAR še nista aktivna; GPS meri samo približno.
       Fotografije se še ne shranjujejo v Supabase.
     </small>
   `;
@@ -78,6 +88,83 @@
   let stream = null;
   let photos = [];
   let items = [];
+  let watchId = null;
+  let lastPoint = null;
+  let trackedMeters = 0;
+  let acceptedPoints = 0;
+  let trackingStarted = 0;
+
+  function haversine(a, b) {
+    const r = 6371000;
+    const rad = Math.PI / 180;
+    const dLat = (b.latitude - a.latitude) * rad;
+    const dLon = (b.longitude - a.longitude) * rad;
+    const x = Math.sin(dLat / 2) ** 2 +
+      Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) *
+      Math.sin(dLon / 2) ** 2;
+    return 2 * r * Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+
+  function trackStatus(msg) {
+    $('wsTrackStatus').textContent = msg;
+  }
+
+  function stopTracking() {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+
+  $('wsTrackStart').onclick = () => {
+    if (!navigator.geolocation || !window.isSecureContext) {
+      trackStatus('GPS potrebuje HTTPS in dovoljenje za lokacijo.');
+      return;
+    }
+    stopTracking();
+    trackedMeters = 0;
+    acceptedPoints = 0;
+    lastPoint = null;
+    trackingStarted = Date.now();
+    const maxAccuracy = Number($('wsAccuracy').value) || 10;
+    trackStatus('Čakam na dovolj natančen GPS signal ...');
+    watchId = navigator.geolocation.watchPosition(pos => {
+      const c = pos.coords;
+      if (!Number.isFinite(c.accuracy) || c.accuracy > maxAccuracy) {
+        trackStatus('Slab GPS signal (±' + Math.round(c.accuracy) + ' m). Meritev: ' + trackedMeters.toFixed(1) + ' m');
+        return;
+      }
+      const point = {latitude:c.latitude, longitude:c.longitude, timestamp:pos.timestamp};
+      if (lastPoint) {
+        const delta = haversine(lastPoint, point);
+        const dt = (point.timestamp - lastPoint.timestamp) / 1000;
+        if (dt <= 0 || delta / dt > 3) return; // zavrni očitne skoke
+        if (delta >= 1.5) trackedMeters += delta;
+      }
+      lastPoint = point;
+      acceptedPoints++;
+      trackStatus('Približna dolžina: ' + trackedMeters.toFixed(1) + ' m · GPS ±' + Math.round(c.accuracy) + ' m · točk: ' + acceptedPoints);
+    }, err => {
+      trackStatus('GPS napaka: ' + err.message);
+      stopTracking();
+    }, {enableHighAccuracy:true, maximumAge:0, timeout:20000});
+  };
+
+  $('wsTrackStop').onclick = () => {
+    stopTracking();
+    trackStatus('Ustavljeno: ' + trackedMeters.toFixed(1) + ' m (približno; preverite na terenu).');
+  };
+
+  $('wsTrackApply').onclick = () => {
+    if (watchId !== null) {
+      trackStatus('Najprej ustavite GPS meritev.');
+      return;
+    }
+    if (acceptedPoints < 2 || trackedMeters <= 0) {
+      trackStatus('Ni veljavne GPS razdalje.');
+      return;
+    }
+    $('wsLength').value = trackedMeters.toFixed(2);
+    trackStatus('Dolžina prenesena. Pred shranjevanjem preverite in popravite.');
+  };
 
   function message(s) {
     $('wsStatus').textContent = s;
@@ -318,6 +405,7 @@
 
   window.addEventListener('pagehide', () => {
     stream?.getTracks().forEach(t => t.stop());
+    stopTracking();
     photos.forEach(p => URL.revokeObjectURL(p.url));
   });
 })();

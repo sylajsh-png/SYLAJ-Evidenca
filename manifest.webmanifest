@@ -1,8 +1,8 @@
 {
   "name": "SYLAJ-Evidenca",
-"id": "/SYLAJ-Evidenca/sylaj-v14",
+"id": "/SYLAJ-Evidenca/sylaj-v18",
   "short_name": "SYLAJ",
-"start_url": "./SYLAJ-Evidenca-V14-BAUHAUS-FIX.html",
+"start_url": "/SYLAJ-Evidenca/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f3f6f9",

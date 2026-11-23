@@ -635,9 +635,20 @@ body{background:#eaf2fa}
 #lang-select{appearance:auto;background:#fff;color:#123c63;border:1px solid #b7d7f1;border-radius:12px;padding:7px 3px;font-size:13px;font-weight:700;max-width:88px;min-width:75px;cursor:pointer;position:relative;z-index:102;pointer-events:auto}
 .header-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
 @media(max-width:420px){#lang-select{min-width:67px;max-width:74px;font-size:12px;padding:6px 2px}.header-right{gap:2px}.header-title{font-size:18px}}
+
+/* SYLAJ camera modal: fixed above all app screens, never inline */
+#sylaj-cam-overlay{display:none;position:fixed;inset:0;z-index:2147483000;background:#07111d;color:#fff;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:auto}
+#sylaj-cam-overlay.active{display:flex!important}
+#sylaj-cam-status{font-size:14px;text-align:center;color:#fff;flex:0 0 auto}
+#sylaj-cam-video{display:block;width:100%;max-width:900px;max-height:calc(100dvh - 155px);min-height:160px;object-fit:contain;background:#000;border-radius:12px;flex:1 1 auto}
+#sylaj-cam-controls{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;flex:0 0 auto;width:100%;padding:4px}
+#sylaj-cam-controls button{min-height:48px;padding:12px 16px;background:#17669a;color:#fff;border:0;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
+#sylaj-cam-shot{background:#087b55!important}
+#sylaj-cam-close{background:#a52e37!important}
 </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-<style id="sylaj-worker-profile-style">.worker-panel{margin:14px 12px 95px}.worker-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.worker-toolbar input,.worker-toolbar select{flex:1;min-width:145px;padding:12px;border:1px solid #bfd8ef;border-radius:12px;background:white}.worker-person{display:flex;align-items:center;gap:12px;width:100%;padding:16px 12px;background:white;color:#152b43;border:0;border-bottom:1px solid #e1e7ed;text-align:left;cursor:pointer}.worker-person:first-child{border-radius:15px 15px 0 0}.worker-person:last-child{border-radius:0 0 15px 15px}.worker-avatar{font-size:26px}.worker-person-name{flex:1;font-weight:700}.worker-person-name small{display:block;color:#65717e;font-weight:400;margin-top:4px}.worker-status{color:#0e9b78;font-size:12px}.worker-status.inactive{color:#c45c35}.worker-profile-head{text-align:center;background:white;padding:24px;border-radius:16px;margin-bottom:12px}.worker-profile-avatar{font-size:52px}.worker-profile-avatar img,.worker-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}.worker-profile-avatar img{width:104px;height:104px}.worker-avatar img{width:38px;height:38px}.worker-photo-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.worker-photo-actions label{cursor:pointer}.worker-photo-note{font-size:12px;color:#64748b;margin:6px}.worker-profile-head h2{margin:6px}.worker-profile-head p{color:#65717e}.worker-profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.worker-profile-section{padding:18px;background:white;border-radius:14px;border:1px solid #dce9f5}.worker-profile-section b{color:#0c4f89}.worker-profile-section p{font-size:14px;color:#566575}.worker-action{background:linear-gradient(#087cd0,#064e93);color:white;border:0;border-radius:10px;padding:12px 16px;margin:8px 5px 8px 0;cursor:pointer}.worker-admin-actions{margin:15px 0}.worker-action.danger{background:#a73333}</style></head>
+<style id="sylaj-worker-profile-style">.worker-panel{margin:14px 12px 95px}.worker-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.worker-toolbar input,.worker-toolbar select{flex:1;min-width:145px;padding:12px;border:1px solid #bfd8ef;border-radius:12px;background:white}.worker-person{display:flex;align-items:center;gap:12px;width:100%;padding:16px 12px;background:white;color:#152b43;border:0;border-bottom:1px solid #e1e7ed;text-align:left;cursor:pointer}.worker-person:first-child{border-radius:15px 15px 0 0}.worker-person:last-child{border-radius:0 0 15px 15px}.worker-avatar{font-size:26px}.worker-person-name{flex:1;font-weight:700}.worker-person-name small{display:block;color:#65717e;font-weight:400;margin-top:4px}.worker-status{color:#0e9b78;font-size:12px}.worker-status.inactive{color:#c45c35}.worker-profile-head{text-align:center;background:white;padding:24px;border-radius:16px;margin-bottom:12px}.worker-profile-avatar{font-size:52px}.worker-profile-avatar img,.worker-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}.worker-profile-avatar img{width:104px;height:104px}.worker-avatar img{width:38px;height:38px}.worker-photo-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}.worker-photo-actions label{cursor:pointer}.worker-photo-note{font-size:12px;color:#64748b;margin:6px}.worker-profile-head h2{margin:6px}.worker-profile-head p{color:#65717e}.worker-profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.worker-profile-section{padding:18px;background:white;border-radius:14px;border:1px solid #dce9f5}.worker-profile-section b{color:#0c4f89}.worker-profile-section p{font-size:14px;color:#566575}.worker-action{background:linear-gradient(#087cd0,#064e93);color:white;border:0;border-radius:10px;padding:12px 16px;margin:8px 5px 8px 0;cursor:pointer}.worker-admin-actions{margin:15px 0}.worker-action.danger{background:#a73333}</style><script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
 <body>
   <div id="app">
     <div id="loading-screen" class="loading-screen">
@@ -1068,12 +1079,15 @@ function renderInvoices(){
  <label>Vrsta računa <select id="invoice-type" class="form-input"><option value="prejeti">Prejeti račun</option><option value="izdani">Izdani račun</option></select></label>
  <label>Dobavitelj / stranka <input id="invoice-party" class="form-input" style="width:100%"></label>
  <label>Številka računa <input id="invoice-number" class="form-input" style="width:100%"></label>
- <label>Datum <input id="invoice-date" type="date" class="form-input" style="width:100%"></label><label>Zapadlost <input id="invoice-due" type="date" class="form-input" style="width:100%"></label><label>Odbitni delež vstopnega DDV (%) <input id="invoice-deduct" type="number" min="0" max="100" value="100" class="form-input" style="width:100%"></label>
+ <label>Datum <input id="invoice-date" type="date" class="form-input" style="width:100%"></label><label>DDV obdobje <input id="invoice-period" type="month" class="form-input" style="width:100%" title="Obdobje DDV, preverite pri računovodstvu"></label><label>Zapadlost <input id="invoice-due" type="date" class="form-input" style="width:100%"></label><label>Odbitni delež vstopnega DDV (%) <input id="invoice-deduct" type="number" min="0" max="100" value="100" class="form-input" style="width:100%"></label>
  <p><b>Postavke po stopnjah DDV</b></p><div id="invoice-lines"></div>
  <button class="action-btn" onclick="invoiceAddLine()">➕ Dodaj stopnjo / postavko</button>
  <div id="invoice-totals" style="margin-top:14px;padding:12px;border:1px solid #cbd5e1;border-radius:12px"></div>
- <p><b>📷 Kamera / 🖼️ Galerija</b></p><label class="action-btn" style="display:inline-block;cursor:pointer">📷 Fotografiraj<input type="file" accept="image/*" capture="environment" style="display:none" onchange="invoicePreviewPhoto(this)"></label> <label class="action-btn" style="display:inline-block;cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" style="display:none" onchange="invoicePreviewPhoto(this)"></label>
- <div id="invoice-photo-preview"></div><button class="action-btn" style="margin-top:16px;background:#0c4a86;color:white" onclick="invoiceSave()">💾 Shrani račun</button>
+ <p><b>📷 Kamera / 🖼️ Galerija</b></p><button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);invoicePreviewPhoto({files:dt.files});})">📷 Fotografiraj</button> <label class="action-btn" style="display:inline-block;cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" style="display:none" onchange="invoicePreviewPhoto(this)"></label>
+ <div id="invoice-photo-preview"></div>
+ <button type="button" class="action-btn" id="invoice-ai-btn" disabled onclick="invoiceRecognizeAI()">🔎 Preberi račun (OCR)</button><details style="margin-top:10px"><summary>Prepoznano besedilo – preverjanje</summary><pre id="invoice-ocr-raw" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:300px"></pre></details>
+ <p style="font-size:12px;color:#64748b;margin:8px 0">OCR bere besedilo neposredno v brskalniku (slovenščina + angleščina). Podatke preverite pred shranjevanjem; nejasna polja ostanejo prazna. Za prvi zagon je potreben internet.</p>
+ <button class="action-btn" style="margin-top:16px;background:#0c4a86;color:white" onclick="invoiceSave()">💾 Shrani račun</button>
  </div>`;
  invoiceDrawLines();
 }
@@ -1086,7 +1100,139 @@ function invoiceSet(i,k,v){invoiceLines[i][k]=v;invoiceTotals();}
 function invoiceAddLine(){invoiceLines.push({rate:'9.5',net:''});invoiceDrawLines();}
 function invoiceRemoveLine(i){if(invoiceLines.length===1)return;invoiceLines.splice(i,1);invoiceDrawLines();}
 function invoiceTotals(){let net=0,vat=0;const breakdown={};for(const l of invoiceLines){const base=invoiceNum(l.net),rate=Number(l.rate);const tax=Number.isFinite(rate)?Math.round((base*rate/100+Number.EPSILON)*100)/100:0;net+=base;vat+=tax;const key=l.rate;breakdown[key]=(breakdown[key]||0)+tax;}const el=document.getElementById('invoice-totals');if(!el)return;el.innerHTML=`<div>Osnova: <b>${invoiceMoney(net)}</b></div>${Object.entries(breakdown).map(([r,v])=>`<div>DDV ${invoiceEsc(r)}${Number.isFinite(Number(r))?' %':''}: ${invoiceMoney(v)}</div>`).join('')}<hr><div><b>Skupaj: ${invoiceMoney(net+vat)}</b></div>`;}
-function invoicePreviewPhoto(input){const f=input.files?.[0];if(!f)return;const el=document.getElementById('invoice-photo-preview');if(!el)return;const url=URL.createObjectURL(f);el.innerHTML='<img alt="Predogled računa" style="max-width:100%;max-height:250px;object-fit:contain;margin:10px 0">';el.querySelector('img').src=url;}
+let invoicePhotoFile=null;
+function invoicePreviewPhoto(input){const f=input.files?.[0];if(!f)return;if(!f.type.startsWith('image/')||f.size>10*1024*1024){alert('Izberite sliko do 10 MB.');return;}invoicePhotoFile=f;const el=document.getElementById('invoice-photo-preview');if(!el)return;const url=URL.createObjectURL(f);el.innerHTML='<img alt="Predogled računa" style="max-width:100%;max-height:250px;object-fit:contain;margin:10px 0"><p style="font-size:13px;color:#64748b">Fotografija pripravljena. Preverite podatke ali pritisnite Prepoznaj z AI.</p>';el.querySelector('img').src=url;const ai=document.getElementById('invoice-ai-btn');if(ai)ai.disabled=false;}
+function sylajInvoiceAmounts(raw){
+ const lines=String(raw||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(!String(raw||'').trim())return null;
+
+ // Money regex – avoid matching dates like 09.11.2026
+ const re=/(?<![\d.,])(?:\d{1,3}(?:[. ]\d{3})+|\d{1,5})[,.]\d{2}(?!\d)/g;
+ const values=[];
+ lines.forEach((line,i)=>{
+  // Skip pure date lines
+  if(/^\d{1,2}[.\/-]\d{1,2}[.\/-]20\d{2}/.test(line))return;
+  for(const m of line.matchAll(re)){
+   const rawNum=m[0];
+   // Skip if it looks like part of a date (e.g. 09.11)
+   if(/\d{1,2}[.\/-]\d{1,2}[.\/-]20\d{2}/.test(line) && rawNum.length<=5)continue;
+   const n=Number(rawNum.replace(/\s/g,'').replace(/\.(?=\d{3}(?:[,.]|$))/g,'').replace(',','.'));
+   if(n>0.01&&n<1000000)values.push({n,i,line:line});
+  }
+ });
+
+ const close=(a,b)=>Math.abs(a-b)<=0.05;
+ // Accept 22%, 22,0%, 22.0%, 22 %
+ const hasRate22=/(?:^|[^\d])22(?:[,.]0)?\s*%/m.test(raw);
+ const hasRate95=/(?:^|[^\d])9[,.]5\s*%/m.test(raw);
+ const hasRate5=/(?:^|[^\d])5(?:[,.]0)?\s*%/m.test(raw);
+ const candidates=[];
+
+ // === Priority 1: numbers on the same line as the tax rate (most reliable for noisy OCR) ===
+ for(let i=0;i<lines.length;i++){
+  const line=lines[i];
+  if(!/(?:22(?:[,.]0)?\s*%|9[,.]5\s*%|stopnja|osnova|ddv|neto|bruto)/i.test(line))continue;
+  const row=values.filter(x=>x.i===i || x.i===i+1 || x.i===i-1);
+  if(row.length<2)continue;
+  const nums=[...new Set(row.map(x=>x.n))].sort((a,b)=>a-b);
+  for(const net of nums){
+   for(const vat of nums){
+    if(vat>=net)continue;
+    const gross=Math.round((net+vat)*100)/100;
+    if(!nums.some(u=>close(u,gross)))continue;
+    let rate=null;
+    if(hasRate22&&close(net*0.22,vat))rate=22;
+    else if(hasRate95&&close(net*0.095,vat))rate=9.5;
+    else if(hasRate5&&close(net*0.05,vat))rate=5;
+    if(rate)candidates.push({net,vat,gross,rate,score:95});
+   }
+  }
+ }
+
+ // === Priority 2: any arithmetic triple that matches a known rate ===
+ for(const n of values)for(const v of values)for(const g of values){
+  if(n===v||n===g||v===g)continue;
+  if(!close(n.n+v.n,g.n))continue;
+  let rate=null;
+  if(hasRate22&&close(n.n*0.22,v.n))rate=22;
+  else if(hasRate95&&close(n.n*0.095,v.n))rate=9.5;
+  else if(hasRate5&&close(n.n*0.05,v.n))rate=5;
+  if(!rate)continue;
+  // Prefer when numbers are close together in the text
+  const dist=Math.abs(n.i-v.i)+Math.abs(v.i-g.i);
+  const score=50+(dist<=2?20:dist<=5?10:0);
+  candidates.push({net:n.n,vat:v.n,gross:g.n,rate,score});
+ }
+
+ // === Priority 3: look for "Bruto skupaj" / "Za plačilo" and back-calculate ===
+ const grossRx=/(?:bruto\s*skupaj|za\s*pla[čc]ilo|skupaj\s*(?:z\s*ddv|v\s*eur)?|total)/i;
+ for(const g of values){
+  if(!grossRx.test(g.line)&&!lines.slice(Math.max(0,g.i-1),g.i+1).some(l=>grossRx.test(l)))continue;
+  for(const v of values){
+   if(v===g||v.n>=g.n)continue;
+   const net=Math.round((g.n-v.n)*100)/100;
+   if(net<=0)continue;
+   let rate=null;
+   if(hasRate22&&close(net*0.22,v.n))rate=22;
+   else if(hasRate95&&close(net*0.095,v.n))rate=9.5;
+   else if(hasRate5&&close(net*0.05,v.n))rate=5;
+   if(rate)candidates.push({net,vat:v.n,gross:g.n,rate,score:80});
+  }
+ }
+
+ if(!candidates.length)return null;
+ candidates.sort((a,b)=>b.score-a.score);
+ const best=candidates[0];
+ // Only reject if there is a clearly different high-scoring alternative
+ const conflict=candidates.find(c=>c.score>=best.score-5&&(!close(c.net,best.net)||!close(c.vat,best.vat)));
+ if(conflict&&best.score<70)return null;
+ if(best.score<40)return null;
+ return best;
+}
+
+let invoiceOcrWorkerPromise=null;
+async function invoiceOcrWorker(){
+ if(!window.Tesseract)throw Error('Knjižnica OCR se ni naložila. Preverite internet.');
+ if(!invoiceOcrWorkerPromise)invoiceOcrWorkerPromise=Tesseract.createWorker('slv+eng',1,{logger:m=>{
+  const e=document.getElementById('invoice-message');
+  if(e&&m.status==='recognizing text')e.textContent='OCR: '+Math.round((m.progress||0)*100)+' %';
+ }}).catch(e=>{invoiceOcrWorkerPromise=null;throw e});
+ return invoiceOcrWorkerPromise;
+}
+function invoiceOcrDate(raw){
+ const m=String(raw).match(/(?:datum(?: računa)?|izdano|date)\s*[:.\-]?\s*(\d{1,2})[.\/\-](\d{1,2})[.\/\-](20\d{2})/i)
+   ||String(raw).match(/\b(\d{1,2})[.\/\-](\d{1,2})[.\/\-](20\d{2})\b/);
+ if(!m)return '';
+ const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]);
+ const dt=new Date(Date.UTC(y,mo-1,d));
+ return dt.getUTCFullYear()===y&&dt.getUTCMonth()===mo-1&&dt.getUTCDate()===d?`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';
+}
+async function invoiceRecognizeAI(){
+ if(!invoicePhotoFile)return alert('Najprej fotografirajte ali izberite račun.');
+ const msg=document.getElementById('invoice-message'),btn=document.getElementById('invoice-ai-btn');
+ if(btn)btn.disabled=true;
+ if(msg)msg.textContent='OCR: berem fotografijo ...';
+ try{
+  const worker=await invoiceOcrWorker();
+  const {data}=await worker.recognize(invoicePhotoFile);
+  const raw=String(data?.text||'');
+  const rawEl=document.getElementById('invoice-ocr-raw');if(rawEl)rawEl.textContent=raw;
+  if(!raw.trim())throw Error('Na fotografiji ni bilo mogoče prebrati besedila.');
+  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const date=invoiceOcrDate(raw);if(date){document.getElementById('invoice-date').value=date;const periodEl=document.getElementById('invoice-period');if(periodEl&&!periodEl.value)periodEl.value=date.slice(0,7);}
+  const numberLine=lines.map(l=>l.match(/(?:ra[čc]un\s*[šs]t\.?|številka\s*ra[čc]una|invoice\s*(?:no|number|#))\s*[:#.]?\s*([A-Z0-9][A-Z0-9\/-]{3,30})/i)).find(Boolean);
+  if(numberLine)document.getElementById('invoice-number').value=numberLine[1];
+  // Supplier is ambiguous on many receipts: do not guess from unrelated text.
+  const known=lines.slice(0,8).find(l=>/^(?:MOL|INA|PETROL|OMV)(?:\s|$)/i.test(l));
+  if(known)document.getElementById('invoice-party').value=known.slice(0,120);
+  const amounts=sylajInvoiceAmounts(raw);
+  if(amounts&&['22','9.5','5'].includes(String(amounts.rate))){
+   invoiceLines=[{rate:String(amounts.rate),net:String(amounts.net)}];invoiceDrawLines();
+  }
+  if(msg)msg.textContent='OCR je končal. '+(amounts?'Zneski so predlagani iz preverjenega seštevka. ':'Zneski niso zanesljivo prepoznani. ')+(!numberLine?'Številko računa vnesite ročno. ':'')+'PREVERITE vsa polja in DDV pred shranjevanjem.';
+ }catch(e){if(msg)msg.textContent='OCR napaka: '+(e.message||e)+'. Fotografijo lahko ponovite ali podatke vnesete ročno.';}
+ finally{if(btn)btn.disabled=false;}
+}
 
 // Invoices: write real parent and VAT rows; invoice photos/OCR are not connected yet.
 function invoiceRound(n){return Math.round((n+Number.EPSILON)*100)/100;}
@@ -1098,10 +1244,11 @@ async function invoiceSave(){
  const partner=document.getElementById('invoice-party')?.value.trim(),stevilka=document.getElementById('invoice-number')?.value.trim(),datum=document.getElementById('invoice-date')?.value;
  if(!partner||!stevilka||!datum)return invoiceMessage('Vnesite partnerja, številko računa in datum.');
  if(invoiceLines.some(l=>!String(l.net).trim()||invoiceNum(l.net)<0))return invoiceMessage('Preverite vse osnove DDV.');
+ const period=document.getElementById('invoice-period')?.value||datum.slice(0,7);if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period))return invoiceMessage('Preverite DDV obdobje (LLLL-MM).');
  const rows=invoiceLineData();if(!rows.length)return invoiceMessage('Dodajte vsaj eno postavko.');
  const osnova=invoiceRound(rows.reduce((a,r)=>a+r.osnova,0)),ddv=invoiceRound(rows.reduce((a,r)=>a+r.ddv,0));
  const rates=new Set(rows.map(r=>r.stopnja_ddv));
- const payload={vrsta:document.getElementById('invoice-type').value,stevilka,partner,datum,zapadlost:document.getElementById('invoice-due').value||null,osnova,ddv,skupaj:invoiceRound(osnova+ddv),stopnja_ddv:rates.size===1?[...rates][0]:null,odbitni_delez:Math.min(100,Math.max(0,invoiceNum(document.getElementById('invoice-deduct').value))),posebni_rezim:rows.some(r=>r.ddv_obravnava!=='obicajno'),placano:false,created_by:currentUser.id};
+ const payload={vrsta:document.getElementById('invoice-type').value,stevilka,partner,datum,ddv_obdobje:period,zapadlost:document.getElementById('invoice-due').value||null,osnova,ddv,skupaj:invoiceRound(osnova+ddv),stopnja_ddv:rates.size===1?[...rates][0]:null,odbitni_delez:Math.min(100,Math.max(0,invoiceNum(document.getElementById('invoice-deduct').value))),posebni_rezim:rows.some(r=>r.ddv_obravnava!=='obicajno'),placano:false,created_by:currentUser.id};
  invoiceMessage('Shranjevanje računa...');
  const {data,error}=await supabaseClient.from('sylaj_racuni').insert(payload).select('id').single();
  if(error)return invoiceMessage('Napaka pri shranjevanju: '+error.message);
@@ -1113,11 +1260,61 @@ async function invoiceSave(){
  invoiceMessage('Račun shranjen. Fotografija se še ne shrani.');
 }
 async function invoiceList(){
- const el=document.getElementById('content');el.innerHTML='<div class="sub-header"><button class="back-btn" onclick="renderInvoices()">← Nazaj</button><div class="title-area"><h2>🧾 Seznam računov</h2></div></div><div id="invoice-list-body" style="padding:16px">Nalaganje...</div>';
- const {data,error}=await supabaseClient.from('sylaj_racuni').select('id,vrsta,stevilka,partner,datum,skupaj,ddv,deleted_at').is('deleted_at',null).order('datum',{ascending:false}).limit(200);
- const body=document.getElementById('invoice-list-body');if(!body)return;
- if(error){body.textContent='Napaka: '+error.message;return;}
- body.innerHTML=`<p>${data.length} računov (zadnjih 200)</p>`+data.map(r=>`<div style="padding:12px;border-bottom:1px solid #d1d5db;display:flex;gap:10px;align-items:center;justify-content:space-between"><div><b>${invoiceEsc(r.partner)}</b><br>${invoiceEsc(r.stevilka)} · ${invoiceEsc(r.datum)} · ${invoiceEsc(r.vrsta)}<br><b>${invoiceMoney(Number(r.skupaj)||0)}</b> (DDV ${invoiceMoney(Number(r.ddv)||0)})</div>${isAdmin?`<button class="action-btn" onclick="invoiceArchive('${r.id}')">Arhiviraj</button>`:''}</div>`).join('');
+ const el=document.getElementById('content');
+ el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="renderInvoices()">← Nazaj</button><div class="title-area"><h2>🧾 Računi – DDV pregled</h2></div></div>
+ <section style="padding:16px">
+ <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+ <label>Leto <input id="inv-report-year" type="number" min="2020" max="2100" value="${new Date().getFullYear()}" style="max-width:110px"></label>
+ <label>Mesec <select id="inv-report-month"><option value="">Celo leto</option>${['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'].map((m,i)=>`<option value="${String(i+1).padStart(2,'0')}">${m}</option>`).join('')}</select></label>
+ <button class="action-btn" onclick="invoiceReportLoad()">Osveži</button></div>
+ <p style="font-size:12px;color:#64748b">Pregled po DDV obdobju. Informativni izračun DDV; posebni režimi in DDV obdobja zahtevajo računovodski pregled.</p>
+ <div id="invoice-report-kpis"></div><div id="invoice-list-body">Nalaganje...</div></section>`;
+ document.getElementById('inv-report-month').value=String(new Date().getMonth()+1).padStart(2,'0');
+ document.getElementById('inv-report-year').addEventListener('change',invoiceReportLoad);
+ document.getElementById('inv-report-month').addEventListener('change',invoiceReportLoad);
+ await invoiceReportLoad();
+}
+async function invoiceReportLoad(){
+ const body=document.getElementById('invoice-list-body'),kpis=document.getElementById('invoice-report-kpis');
+ if(!body||!kpis)return;
+ const year=Number(document.getElementById('inv-report-year').value),month=document.getElementById('inv-report-month').value;
+ if(!Number.isInteger(year)||year<2020||year>2100){body.textContent='Preverite leto.';return;}
+ body.textContent='Nalaganje...';
+ const from=year+'-'+(month||'01')+'-01';
+ const to=month?(Number(month)===12?(year+1)+'-01-01':year+'-'+String(Number(month)+1).padStart(2,'0')+'-01'):(year+1)+'-01-01';
+ let rows=[];
+ for(let offset=0;offset<100000;offset+=1000){
+  const {data,error}=await supabaseClient.from('sylaj_racuni')
+   .select('id,vrsta,stevilka,partner,datum,ddv_obdobje,osnova,skupaj,ddv,odbitni_delez,placano,posebni_rezim')
+   .is('deleted_at',null).gte('ddv_obdobje',from.slice(0,7)).lt('ddv_obdobje',to.slice(0,7)).order('datum',{ascending:false}).range(offset,offset+999);
+  if(error){body.textContent='Napaka pri branju računov: '+error.message;return;}
+  rows.push(...(data||[]));if(!data||data.length<1000)break;
+ }
+ const sum=(arr,key)=>invoiceRound(arr.reduce((a,r)=>a+(Number(r[key])||0),0));
+ const inc=rows.filter(r=>r.vrsta==='prejeti'),out=rows.filter(r=>r.vrsta==='izdani');
+ const paid=rows.filter(r=>r.placano),unpaid=rows.filter(r=>!r.placano);
+ const inputVat=sum(inc,'ddv'),outputVat=sum(out,'ddv');
+ const deductible=invoiceRound(inc.reduce((a,r)=>a+(r.posebni_rezim?0:(Number(r.ddv)||0)*(Number(r.odbitni_delez??100)/100)),0));
+ const balance=invoiceRound(outputVat-deductible);
+ const items=[
+ ['Prejeti računi',sum(inc,'skupaj')],['Izdani računi',sum(out,'skupaj')],
+ ['Plačani računi',sum(paid,'skupaj')],['Neplačani računi',sum(unpaid,'skupaj')],
+ ['Vstopni DDV',inputVat],['Odbitni DDV',deductible],['Izstopni DDV',outputVat],
+ [balance>=0?'DDV za plačilo':'DDV za vračilo',Math.abs(balance)]
+ ];
+ kpis.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:14px 0">'+items.map(([name,value])=>`<div style="background:#eaf4ff;border-radius:12px;padding:12px"><span>${invoiceEsc(name)}</span><strong style="display:block;font-size:20px">${invoiceMoney(value)}</strong></div>`).join('')+'</div><p style="font-size:12px;color:#9a3412">Plačani/neplačani zneski so seštevek računov obeh vrst, ne denarni tok. DDV saldo je informativen; posebni režimi niso avtomatsko pravilno obračunani.</p>';
+ const section=(kind,title)=>{
+  const arr=rows.filter(r=>r.vrsta===kind);
+  return `<h3>${title} (${arr.length})</h3>`+(arr.length?arr.map(r=>`<div style="padding:12px 0;border-bottom:1px solid #d1d5db;display:flex;gap:10px;align-items:center;justify-content:space-between"><div><b>${invoiceEsc(r.partner)}</b><br>${invoiceEsc(r.stevilka)} · ${invoiceEsc(r.datum)}<br>${invoiceMoney(Number(r.skupaj)||0)} · DDV ${invoiceMoney(Number(r.ddv)||0)}<br><b>${r.placano?'Plačano':'Neplačano'}</b>${r.posebni_rezim?' · Posebni režim':''}</div><div style="display:flex;flex-direction:column;gap:5px">${isAdmin?`<button class="action-btn" onclick="invoiceTogglePaid('${r.id}',${!r.placano})">${r.placano?'Označi neplačano':'Označi plačano'}</button><button class="action-btn" onclick="invoiceArchive('${r.id}')">Arhiviraj</button>`:''}</div></div>`).join(''):'<p>Ni računov.</p>');
+ };
+ body.innerHTML=section('prejeti','Prejeti računi')+section('izdani','Izdani računi');
+}
+async function invoiceTogglePaid(id,paid){
+ if(!isAdmin||!currentUser)return;
+ if(!confirm(paid?'Potrdite, da je račun plačan?':'Označim račun kot neplačan?'))return;
+ const {error}=await supabaseClient.from('sylaj_racuni').update({placano:paid,updated_by:currentUser.id}).eq('id',id).is('deleted_at',null);
+ if(error)return alert('Napaka: '+error.message);
+ await invoiceReportLoad();
 }
 async function invoiceArchive(id){
  if(!isAdmin||!confirm('Arhiviram račun? Podatki ostanejo v zgodovini.'))return;
@@ -1457,6 +1654,8 @@ function renderNavAdd(){
  c.innerHTML=`<div style="padding:18px"><h2>${sylajNavText('Hitri dostop','Hyrje e shpejtë','Quick access')}</h2><p>${sylajNavText('Izberite modul za nov vnos.','Zgjidh modulin ku dëshiron të regjistrosh të dhëna.','Choose a module to enter information.')}</p>${sylajNavLinks(sylajQuickModules.filter(r=>['hours','sites','machines','depot','invoices','fuel','services','cleaning','calendar'].includes(r[0])))}</div>`;
 }
 function navigate(page) {
+ if(typeof depotStopInlineCamera === "function")depotStopInlineCamera();
+ if(typeof sylajCamStop === "function")sylajCamStop();
   const content = document.getElementById('content');
   const banner = document.getElementById('home-banner');
   if (!content) return;
@@ -1734,7 +1933,7 @@ async function machineShowPhoto(type,index){
  const large=document.getElementById('machine-photo-large'),actions=document.getElementById('machine-photo-actions'),status=document.getElementById('machine-photo-status');
  if(!large||!actions||!status)return;
  if(machineMayEdit(r)){
-  actions.innerHTML=`<label class="action-btn" style="cursor:pointer">📷 Fotografiraj<input type="file" accept="image/*" capture="environment" style="display:none" onchange="machineUploadPhoto('${type}',${index},this)"></label><label class="action-btn" style="cursor:pointer">🖼️ Izberi iz galerije<input type="file" accept="image/*" style="display:none" onchange="machineUploadPhoto('${type}',${index},this)"></label><button class="action-btn" onclick="machineDeletePhoto('${type}',${index})">Odstrani fotografijo</button>`;
+  actions.innerHTML=`<button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);machineUploadPhoto('${type}',${index},{files:dt.files});})">📷 Fotografiraj</button><label class="action-btn" style="cursor:pointer">🖼️ Izberi iz galerije<input type="file" accept="image/*" style="display:none" onchange="machineUploadPhoto('${type}',${index},this)"></label><button class="action-btn" onclick="machineDeletePhoto('${type}',${index})">Odstrani fotografijo</button>`;
  }
  try{
   const url=await machineGetPhoto(type,r.id);
@@ -1762,7 +1961,7 @@ async function machineUploadPhoto(type,index,input){
   delete machinePhotoUrls[machinePhotoKey(type,r.id)];
   await machineShowPhoto(type,index);
  }catch(e){if(status)status.textContent='Napaka: '+e.message;}
- input.value='';
+ try{input.value="";}catch(_){}
 }
 async function machineDeletePhoto(type,index){
  const r=machineRows[type]?.[index];if(!r||!machineMayEdit(r)||!confirm('Odstranim fotografijo?'))return;
@@ -1804,12 +2003,22 @@ async function renderDepot(tab=depotTab){
  const tabs=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button class="action-btn" onclick="renderDepot('orodja')" style="background:${tab==='orodja'?'#bfdbfe':''}">🧰 Orodja</button><button class="action-btn" onclick="renderDepot('rrobat')" style="background:${tab==='rrobat'?'#bfdbfe':''}">👷 Delovna oblačila</button></div>`;
  el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')">← Nazaj</button><div class="title-area"><h2>🧰 Depo</h2></div><button class="home-btn" onclick="navigate('home')">⌂</button></div><div style="padding:12px">${tabs}${tab==='orodja'?`<button class="action-btn" onclick="depotAddForm()" style="margin-bottom:12px">➕ Dodaj orodje</button>`:''}<input id="depot-search" class="form-input" placeholder="Poišči po imenu..." value="${depotSafe(depotQuery)}" oninput="depotQuery=this.value;depotDrawItems()" style="width:100%;max-width:500px;padding:12px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:12px"/><div id="depot-items"></div>${result.error?`<p style="color:#a33">${depotSafe(result.error.message)}</p>`:''}${issue?`<p style="color:#a33">${depotSafe(issue)}. Najprej zaženite priloženi SQL.</p>`:''}</div>`;
  depotDrawItems();
+ await depotLoadCatalogPhotos();
+}
+async function depotLoadCatalogPhotos(){
+ if(depotTab!=='orodja')return;
+ const paths=depotItems.filter(r=>depotPhoto(r)&&!/^https?:\/\//i.test(depotPhoto(r)));
+ for(const r of paths){
+  const {data,error}=await supabaseClient.storage.from('sylaj-tool-catalog').createSignedUrl(depotPhoto(r),3600);
+  if(!error&&data?.signedUrl)r._catalogSignedUrl=data.signedUrl;
+ }
+ depotDrawItems();
 }
 function depotDrawItems(){
  const el=document.getElementById('depot-items');if(!el)return;
  const list=depotItems.map((r,i)=>({r,i})).filter(({r})=>depotName(r).toLowerCase().includes(depotQuery.toLowerCase()));
  if(!list.length){el.innerHTML='<div class="empty-state">Ni najdenih zapisov.</div>';return;}
- el.innerHTML=list.map(({r,i})=>{const photo=depotPhoto(r),safePhoto=photo&&/^https:\/\//i.test(photo)?photo:null,m=depotTab==='orodja'?depotMove(r):null;
+ el.innerHTML=list.map(({r,i})=>{const photo=r._catalogSignedUrl||depotPhoto(r),safePhoto=photo&&/^https:\/\//i.test(photo)?photo:null,m=depotTab==='orodja'?depotMove(r):null;
  const label=m?m.status==='vrnjeno'?'Čaka potrditev':m.status==='poskodovano'?'Poškodovano':'Prevzeto':'';
  return `<div class="settings-item" style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #e2e8f0;${m?'background:#f1f5f9;':''}"><button type="button" onclick="depotOpen(${i})" aria-label="Odpri ${depotSafe(depotName(r))}" style="border:0;background:transparent;padding:0;cursor:pointer"><div class="machine-thumb" style="${m?'filter:grayscale(1);opacity:.55;':''}">${safePhoto?`<img src="${depotSafe(safePhoto)}" alt="Fotografija orodja" loading="lazy" onerror="this.parentNode.textContent='🧰'">`:'🧰'}</div></button><div style="min-width:0;flex:1"><b style="${m?'color:#64748b':''}">${depotSafe(depotName(r))}</b>${m?`<br><small>${depotSafe(label)} · ${depotSafe(depotTeamName(m.ekipa_id))}</small>`:''}</div><button class="action-btn" onclick="depotOpen(${i})">Odpri</button>${isAdmin&&!m?`<button class="action-btn" onclick="depotArchive(${i})" style="color:#991b1b">Izbriši</button>`:''}</div>`}).join('');
 }
@@ -1825,14 +2034,54 @@ async function depotAddForm(){
  <label>Interna oznaka<input id="depot-new-code" class="form-input" style="width:100%"></label>
  <label>Opis<textarea id="depot-new-description" class="form-input" style="width:100%"></textarea></label>
  <p><b>Fotografija</b> (kamera ali galerija)</p>
- <label class="action-btn" style="display:inline-block;cursor:pointer">📷 Kamera<input type="file" accept="image/*" capture="environment" style="display:none" onchange="depotPreviewNew(this)"></label>
+ <button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);depotPreviewNew({files:dt.files});})">📷 Kamera</button>
  <label class="action-btn" style="display:inline-block;cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" style="display:none" onchange="depotPreviewNew(this)"></label>
  <div id="depot-new-preview"></div><button id="depot-ai-button" class="action-btn" onclick="depotRecognizeAI()" disabled>🤖 Prepoznaj z AI</button><p id="depot-new-status" style="color:#64748b;font-size:13px">Izberite fotografijo in pritisnite Prepoznaj z AI. Ročni vnos je vedno na voljo. AI potrebuje nameščeno Supabase Edge Function.</p>
  <button class="action-btn" onclick="depotSaveNew()">💾 Shrani orodje</button></div>`;
- depotNewFile=null;depotAIConfirmed=false;
+ depotStopInlineCamera();depotNewFile=null;depotAIConfirmed=false;
 }
 let depotNewFile=null;
 let depotAIConfirmed=false;
+let depotCameraStream=null;
+async function depotStartInlineCamera(){
+ const area=document.getElementById('depot-camera-area');
+ const status=document.getElementById('depot-new-status');
+ if(!area)return;
+ try{
+  if(!navigator.mediaDevices?.getUserMedia)throw Error('Kamera v brskalniku ni podprta. Uporabite Galerija.');
+  depotStopInlineCamera();
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  depotCameraStream=stream;
+  const video=document.getElementById('depot-camera-video');
+  if(!video){stream.getTracks().forEach(t=>t.stop());depotCameraStream=null;return;}
+  video.srcObject=stream;area.style.display='block';await video.play();
+  if(status)status.textContent='Usmerite kamero v orodje in pritisnite Fotografiraj.';
+ }catch(e){depotStopInlineCamera();if(status)status.textContent='Kamera: '+(e.message||e)+'. Poskusite Galerija.';}
+}
+function depotStopInlineCamera(){
+ if(depotCameraStream){depotCameraStream.getTracks().forEach(t=>t.stop());depotCameraStream=null;}
+ const area=document.getElementById('depot-camera-area');if(area)area.style.display='none';
+ const video=document.getElementById('depot-camera-video');if(video)video.srcObject=null;
+}
+function depotCaptureInlineCamera(){
+ const video=document.getElementById('depot-camera-video');
+ const status=document.getElementById('depot-new-status');
+ if(!video||!video.videoWidth){if(status)status.textContent='Kamera še ni pripravljena.';return;}
+ const canvas=document.createElement('canvas');
+ const scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));
+ canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
+ canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+ canvas.toBlob(blob=>{
+  if(!blob){if(status)status.textContent='Fotografije ni bilo mogoče zajeti.';return;}
+  depotNewFile=new File([blob],'orodje-'+Date.now()+'.jpg',{type:'image/jpeg'});
+  depotAIConfirmed=false;
+  const preview=document.getElementById('depot-new-preview');
+  if(preview){preview.innerHTML='<img style="width:130px;height:130px;object-fit:cover;border-radius:12px;margin:12px 0" alt="Fotografija orodja">';preview.querySelector('img').src=URL.createObjectURL(blob);}
+  const aiBtn=document.getElementById('depot-ai-button');if(aiBtn)aiBtn.disabled=false;
+  if(status)status.textContent='Fotografija je pripravljena. Izpolnite podatke in pritisnite Shrani orodje.';
+  depotStopInlineCamera();
+ },'image/jpeg',0.82);
+}
 function depotPreviewNew(input){
  const f=input.files?.[0];if(!f)return;
  if(!f.type.startsWith('image/')||f.size>8*1024*1024){alert('Izberite sliko do 8 MB.');return;}
@@ -1872,7 +2121,7 @@ async function depotSaveNew(){
  const name=document.getElementById('depot-new-name')?.value.trim();
  if(!name)return alert('Vnesite naziv orodja.');
  const status=document.getElementById('depot-new-status');
- const payload={naziv:name,znamka:document.getElementById('depot-new-brand').value.trim()||null,model:document.getElementById('depot-new-model').value.trim()||null,serijska_stevilka:document.getElementById('depot-new-serial').value.trim()||null,interna_oznaka:document.getElementById('depot-new-code').value.trim()||null,opis:document.getElementById('depot-new-description').value.trim()||null,ai_prepoznano:depotAIConfirmed,status:'na_voljo'};
+ const payload={naziv:name,znamka:document.getElementById('depot-new-brand').value.trim()||null,model:document.getElementById('depot-new-model').value.trim()||null,serijska_stevilka:document.getElementById('depot-new-serial').value.trim()||null,interna_oznaka:document.getElementById('depot-new-code').value.trim()||null,opis:document.getElementById('depot-new-description').value.trim()||null,ai_prepoznano:depotAIConfirmed,status:'v_skladiscu'};
  try{
   status.textContent='Shranjevanje...';
   const {data,error}=await supabaseClient.from('orodja').insert(payload).select('id').single();
@@ -1883,9 +2132,7 @@ async function depotSaveNew(){
    const bucket=supabaseClient.storage.from('sylaj-tool-catalog');
    const {error:upErr}=await bucket.upload(path,depotNewFile,{contentType:depotNewFile.type});
    if(upErr){status.textContent='Orodje je shranjeno, fotografija pa ne: '+upErr.message;return;}
-   const {data:link,error:linkErr}=await bucket.createSignedUrl(path,60*60*24*365);
-   if(linkErr){status.textContent='Orodje je shranjeno, fotografija pa ni povezana: '+linkErr.message;return;}
-   const {error:linkSaveErr}=await supabaseClient.from('orodja').update({fotografija:link.signedUrl}).eq('id',data.id);
+   const {error:linkSaveErr}=await supabaseClient.from('orodja').update({fotografija:path}).eq('id',data.id);
    if(linkSaveErr){status.textContent='Orodje je shranjeno, fotografija pa ni povezana: '+linkSaveErr.message;return;}
   }
   await renderDepot('orodja');
@@ -1905,10 +2152,6 @@ async function depotOpen(i){
  const r=depotItems[i];if(!r)return;
  if(depotTab!=='orodja')return alert('Evidenca oblačil bo dodana posebej.');
  const m=depotMove(r);
- if(!m&&depotCanTake()){
-  if(!confirm('Prevzamem orodje '+depotName(r)+'?'))return;
-  await depotTake(i);return;
- }
  await depotDetail(i);
 }
 async function depotTake(i){
@@ -1926,8 +2169,24 @@ async function depotTake(i){
 async function depotDetail(i){
  const r=depotItems[i],m=depotMove(r),el=document.getElementById('content');if(!r||!el)return;
  const canManage=m&&(isAdmin||userTeamIds.some(id=>String(id)===String(m.ekipa_id)));
- el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="renderDepot('orodja')">← Nazaj</button><div class="title-area"><h2>${depotSafe(depotName(r))}</h2></div></div><div style="padding:16px"><h3>${m?m.status==='prevzeto'?'Prevzeto':m.status==='vrnjeno'?'Čaka potrditev':'Poškodovano':'Na voljo'}</h3>${m?`<p>Ekipa: <b>${depotSafe(depotTeamName(m.ekipa_id))}</b><br>Prevzel: ${depotSafe(m.prevzel_id)}<br>Datum: ${depotSafe(new Date(m.created_at).toLocaleString('sl-SI'))}</p>`:'<p>Orodje je na voljo.</p>'}${m&&canManage?`<h3>Fotografije – prevzem in vračilo</h3><label class="action-btn" style="display:inline-block;margin:5px;cursor:pointer">📷 Kamera<input type="file" accept="image/*" capture="environment" style="display:none" onchange="depotUpload('${m.id}',this)"></label><label class="action-btn" style="display:inline-block;margin:5px;cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="depotUpload('${m.id}',this)"></label><div id="depot-photos">Nalaganje...</div>${m.status==='prevzeto'?`<p><label>Stanje ob vračilu <select id="depot-condition"><option value="v_redu">V redu</option><option value="poskodovano">Poškodovano</option></select></label></p><button class="action-btn" onclick="depotReturn('${m.id}')">📥 Zabeleži vračilo</button>`:''}${isAdmin&&m.status!=='prevzeto'?`<button class="action-btn" onclick="depotConfirm('${m.id}')">✅ Potrdi vračilo</button>`:''}`:''}${m&&!canManage?'<p>Za to ekipo nimate pravic urejanja.</p>':''}</div>`;
+ el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="renderDepot('orodja')">← Nazaj</button><div class="title-area"><h2>${depotSafe(depotName(r))}</h2></div></div><div style="padding:16px"><h3>${m?m.status==='prevzeto'?'Prevzeto':m.status==='vrnjeno'?'Čaka potrditev':'Poškodovano':'Na voljo'}</h3>${depotPhoto(r)?`<div id="depot-catalog-preview" style="margin:12px 0"></div>`:''}${isAdmin?`<div style="margin:12px 0"><button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);depotUpdateCatalogPhoto(${i},{files:dt.files});})">📷 Kamera</button> <label class="action-btn" style="display:inline-block;cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" style="display:none" onchange="depotUpdateCatalogPhoto(${i},this)"></label><p id="depot-catalog-status" style="font-size:13px;color:#64748b"></p></div>`:''}${!m&&depotCanTake()?`<button class="action-btn" onclick="depotTake(${i})">📤 Prevzemi orodje</button>`:''}${m?`<p>Ekipa: <b>${depotSafe(depotTeamName(m.ekipa_id))}</b><br>Prevzel: ${depotSafe(m.prevzel_id)}<br>Datum: ${depotSafe(new Date(m.created_at).toLocaleString('sl-SI'))}</p>`:'<p>Orodje je na voljo.</p>'}${m&&canManage?`<h3>Fotografije – prevzem in vračilo</h3><button type="button" class="action-btn" style="margin:5px" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);const fake={files:dt.files};depotUpload('${m.id}',fake);})">📷 Kamera</button><label class="action-btn" style="display:inline-block;margin:5px;cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="depotUpload('${m.id}',this)"></label><div id="depot-photos">Nalaganje...</div>${m.status==='prevzeto'?`<p><label>Stanje ob vračilu <select id="depot-condition"><option value="v_redu">V redu</option><option value="poskodovano">Poškodovano</option></select></label></p><button class="action-btn" onclick="depotReturn('${m.id}')">📥 Zabeleži vračilo</button>`:''}${isAdmin&&m.status!=='prevzeto'?`<button class="action-btn" onclick="depotConfirm('${m.id}')">✅ Potrdi vračilo</button>`:''}`:''}${m&&!canManage?'<p>Za to ekipo nimate pravic urejanja.</p>':''}</div>`;
  if(m)await depotShowPhotos(m.id);
+ const preview=document.getElementById('depot-catalog-preview');
+ if(preview){const photo=r._catalogSignedUrl||depotPhoto(r);if(photo){let url=photo;if(!/^https?:\/\//i.test(photo)){const {data}=await supabaseClient.storage.from('sylaj-tool-catalog').createSignedUrl(photo,3600);url=data?.signedUrl;}if(url&&/^https?:\/\//i.test(url)){const img=document.createElement('img');img.src=url;img.alt='Fotografija orodja';img.style='max-width:100%;max-height:260px;border-radius:12px;object-fit:contain';preview.append(img);}}}
+}
+async function depotUpdateCatalogPhoto(i,input){
+ const file=input.files?.[0],r=depotItems[i],status=document.getElementById('depot-catalog-status');
+ if(!isAdmin||!file||!r)return;
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){status.textContent='Dovoljene JPG, PNG, WebP do 8 MB.';return;}
+ status.textContent='Shranjevanje fotografije...';
+ const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+ const path=`catalog/${r.id}/${crypto.randomUUID()}.${ext}`;
+ const bucket=supabaseClient.storage.from('sylaj-tool-catalog');
+ const {error}=await bucket.upload(path,file,{contentType:file.type});
+ if(error){status.textContent='Napaka pri nalaganju: '+error.message;return;}
+ const {error:dbError}=await supabaseClient.from('orodja').update({fotografija:path}).eq('id',r.id);
+ if(dbError){await bucket.remove([path]);status.textContent='Napaka pri povezavi: '+dbError.message;return;}
+ r.fotografija=path;delete r._catalogSignedUrl;await depotLoadCatalogPhotos();await depotDetail(i);
 }
 async function depotShowPhotos(id){
  const el=document.getElementById('depot-photos');if(!el)return;
@@ -1957,7 +2216,7 @@ async function depotUpload(id,input){
   const {error:dbErr}=await supabaseClient.from('sylaj_tool_photos').insert({movement_id:id,phase,storage_path:path,uploaded_by:currentUser.id});
   if(dbErr){await supabaseClient.storage.from('sylaj-tool-evidence').remove([path]);failures.push(dbErr.message);}
  }
- input.value='';await depotShowPhotos(id);if(failures.length)alert('Nekatere fotografije niso shranjene: '+failures.join('; '));
+ try{input.value='';}catch(_){} await depotShowPhotos(id);if(failures.length)alert('Nekatere fotografije niso shranjene: '+failures.join('; '));
 }
 async function depotReturn(id){
  const condition=document.getElementById('depot-condition')?.value||'v_redu';
@@ -2296,7 +2555,7 @@ async function workerLoadPhoto(id){
  const status=document.getElementById('workerPhotoStatus');
  if(!avatar||!actions||!status)return;
  if(isAdmin){
-  actions.innerHTML=`<label class="worker-action">📷 Fotografiraj<input type="file" accept="image/*" capture="environment" style="display:none" onchange="workerUploadPhoto('${workerEsc(id)}',this)"></label>
+  actions.innerHTML=`<button type="button" class="worker-action" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);workerUploadPhoto('${workerEsc(id)}',{files:dt.files});})">📷 Fotografiraj</button>
   <label class="worker-action">🖼️ Izberi iz galerije<input type="file" accept="image/*" style="display:none" onchange="workerUploadPhoto('${workerEsc(id)}',this)"></label>
   <button class="worker-action danger" onclick="workerDeletePhoto('${workerEsc(id)}')">Odstrani fotografijo</button>`;
  }
@@ -2330,7 +2589,7 @@ async function workerUploadPhoto(id,input){
   if(previous?.storage_path)await bucket.remove([previous.storage_path]);
   await workerLoadPhoto(id);
  }catch(e){if(status)status.textContent='Napaka: '+e.message;}
- input.value='';
+ try{input.value="";}catch(_){}
 }
 async function workerDeletePhoto(id){
  if(!isAdmin||!confirm('Odstranim fotografijo delavca?'))return;
@@ -2434,7 +2693,7 @@ async function siteOpen(id){
 const SITE_PHOTO_BUCKET='sylaj-site-photos';
 function sitePhotoControls(id){
  const el=document.getElementById('sitePhotoActions');if(!el)return;
- el.innerHTML=isAdmin?`<label class="action-btn" style="cursor:pointer">📷 Fotografiraj<input type="file" accept="image/*" capture="environment" style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label><label class="action-btn" style="cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label>`:'';
+ el.innerHTML=isAdmin?`<button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);siteUploadPhotos('${siteSafe(id)}',{files:dt.files});})">📷 Fotografiraj</button><label class="action-btn" style="cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label>`:'';
 }
 async function siteLoadPhotos(id){
  sitePhotoControls(id);
@@ -2474,7 +2733,7 @@ async function siteUploadPhotos(id,input){
    if(saveError){await supabaseClient.storage.from(SITE_PHOTO_BUCKET).remove([path]);throw saveError;}
   }catch(e){status.textContent='Napaka pri nalaganju: '+e.message;input.value='';return;}
  }
- input.value='';await siteLoadPhotos(id);
+ try{input.value="";}catch(_){}await siteLoadPhotos(id);
 }
 async function siteDeletePhoto(siteId,photoId,path){
  if(!isAdmin||!confirm('Izbrišem fotografijo gradbišča?'))return;
@@ -2500,7 +2759,7 @@ function siteGpsResult(){
 }
 function siteRenderMeasure(id){
  const el=document.getElementById('siteMeasurePanel');if(!el)return;
- el.innerHTML=`<div class="site-measure-box"><b>📐 Izmeri z GPS ali kamero</b><p style="font-size:12px">GPS: približna razdalja / površina. Kamera: fotografija kot dokaz, ne samodejna meritev.</p><div class="action-bar"><button class="action-btn" onclick="siteGpsStart('${siteSafe(id)}','distance')">📍 GPS – metri</button><button class="action-btn" onclick="siteGpsStart('${siteSafe(id)}','area')">📍 GPS – m²</button><button class="action-btn" onclick="siteGpsStop()">⏹ Ustavi</button></div><div id="siteGpsStatus" aria-live="polite">GPS še ni zagnan.</div><div class="action-bar"><button class="action-btn" onclick="siteGpsSave('${siteSafe(id)}')">💾 Shrani izmero</button><label class="action-btn" style="cursor:pointer">📷 Kamera<input type="file" accept="image/*" capture="environment" style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label><label class="action-btn" style="cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label></div></div>`;
+ el.innerHTML=`<div class="site-measure-box"><b>📐 Izmeri z GPS ali kamero</b><p style="font-size:12px">GPS: približna razdalja / površina. Kamera: fotografija kot dokaz, ne samodejna meritev.</p><div class="action-bar"><button class="action-btn" onclick="siteGpsStart('${siteSafe(id)}','distance')">📍 GPS – metri</button><button class="action-btn" onclick="siteGpsStart('${siteSafe(id)}','area')">📍 GPS – m²</button><button class="action-btn" onclick="siteGpsStop()">⏹ Ustavi</button></div><div id="siteGpsStatus" aria-live="polite">GPS še ni zagnan.</div><div class="action-bar"><button class="action-btn" onclick="siteGpsSave('${siteSafe(id)}')">💾 Shrani izmero</button><button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);siteUploadPhotos('${siteSafe(id)}',{files:dt.files});})">📷 Kamera</button><label class="action-btn" style="cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label></div></div>`;
  siteGpsUpdate();
 }
 function siteGpsUpdate(message){
@@ -2717,6 +2976,78 @@ const sylajTranslationObserver=new MutationObserver(()=>{
 });
 sylajTranslationObserver.observe(document.body,{childList:true,subtree:true});
 
+
+/* ===== Shared in-app camera (fixes Samsung/PWA reload when using system camera intent) ===== */
+let sylajCamStream = null;
+let sylajCamFacing = 'environment';
+let sylajCamCallback = null;
+function sylajCamStop(){
+  if(sylajCamStream){sylajCamStream.getTracks().forEach(t=>t.stop());sylajCamStream=null;}
+  const v=document.getElementById('sylaj-cam-video');
+  if(v)v.srcObject=null;
+  const o=document.getElementById('sylaj-cam-overlay');
+  if(o){o.classList.remove('active');o.setAttribute('aria-hidden','true');}
+  sylajCamCallback=null;
+}
+async function sylajOpenCamera(onCapture, opts={}){
+  if(typeof onCapture!=='function')return;
+  sylajCamCallback=onCapture;
+  sylajCamFacing=opts.facing||'environment';
+  const o=document.getElementById('sylaj-cam-overlay');
+  const status=document.getElementById('sylaj-cam-status');
+  const video=document.getElementById('sylaj-cam-video');
+  if(!o||!video){alert('Kamera UI ni na voljo.');return;}
+  o.classList.add('active');o.setAttribute('aria-hidden','false');
+  if(status)status.textContent='Priprava kamere...';
+  try{
+    if(!window.isSecureContext)throw new Error('Za kamero odprite aplikacijo prek HTTPS (GitHub Pages)');
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error('getUserMedia ni podprt');
+    if(sylajCamStream){sylajCamStream.getTracks().forEach(t=>t.stop());sylajCamStream=null;video.srcObject=null;}
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:sylajCamFacing},width:{ideal:1920},height:{ideal:1080}},
+      audio:false
+    });
+    sylajCamStream=stream;
+    video.srcObject=stream;
+    await video.play();
+    if(status)status.textContent='Usmerite kamero in pritisnite Fotografiraj';
+  }catch(e){
+    if(status)status.textContent='Kamera ni na voljo: '+(e.message||e)+'. Zaprite kamero in izberite Galerija.';
+    // No system camera fallback: it could reload the PWA and lose the form.
+  }
+}
+function sylajCamCapture(){
+  const video=document.getElementById('sylaj-cam-video');
+  const status=document.getElementById('sylaj-cam-status');
+  if(!video||!video.videoWidth){if(status)status.textContent='Kamera še ni pripravljena.';return;}
+  const canvas=document.createElement('canvas');
+  const max=1600;
+  const scale=Math.min(1,max/Math.max(video.videoWidth,video.videoHeight));
+  canvas.width=Math.round(video.videoWidth*scale);
+  canvas.height=Math.round(video.videoHeight*scale);
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  canvas.toBlob(blob=>{
+    if(!blob){if(status)status.textContent='Zajem ni uspel.';return;}
+    const file=new File([blob],'foto-'+Date.now()+'.jpg',{type:'image/jpeg'});
+    const cb=sylajCamCallback;
+    sylajCamStop();
+    if(cb)cb(file);
+  },'image/jpeg',0.85);
+}
+async function sylajCamSwitch(){
+  sylajCamFacing=sylajCamFacing==='environment'?'user':'environment';
+  const cb=sylajCamCallback;
+  if(sylajCamStream){sylajCamStream.getTracks().forEach(t=>t.stop());sylajCamStream=null;}
+  if(cb)await sylajOpenCamera(cb,{facing:sylajCamFacing});
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('sylaj-cam-shot')?.addEventListener('click',sylajCamCapture);
+  document.getElementById('sylaj-cam-close')?.addEventListener('click',sylajCamStop);
+  document.getElementById('sylaj-cam-switch')?.addEventListener('click',sylajCamSwitch);
+});
+// Also stop camera when navigating
+const _origNavigate=typeof navigate==='function'?navigate:null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('login-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2749,6 +3080,54 @@ window.doLogout = doLogout;
 </script>
 <script>
 if ("serviceWorker" in navigator && location.protocol === "https:") { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.warn("SW:", err))); }
+</script>
+
+<div id="sylaj-cam-overlay" aria-hidden="true">
+  <p id="sylaj-cam-status">Priprava kamere...</p>
+  <video id="sylaj-cam-video" autoplay playsinline muted></video>
+  <div id="sylaj-cam-controls">
+    <button type="button" id="sylaj-cam-shot">📸 Fotografiraj</button>
+    <button type="button" id="sylaj-cam-switch">🔄 Zamenjaj</button>
+    <button type="button" id="sylaj-cam-close">✖ Zapri</button>
+  </div>
+</div>
+
+<script>
+// SYLAJ auto-update: checks the published GitHub Pages version while online.
+(() => {
+  const CURRENT_VERSION = '2026.11.23.1';
+  let offered = false;
+  async function checkUpdate() {
+    if (offered || !navigator.onLine || location.protocol !== 'https:') return;
+    try {
+      const response = await fetch('./version.json?check=' + Date.now(), {cache:'no-store'});
+      if (!response.ok) return;
+      const info = await response.json();
+      if (!info.version || info.version === CURRENT_VERSION) return;
+      offered = true;
+      const banner = document.createElement('div');
+      banner.setAttribute('role','status');
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#0a4d8c;color:white;padding:14px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;box-shadow:0 -3px 15px #0004;font:16px Arial,sans-serif';
+      const msg = document.createElement('span'); msg.textContent = 'Na voljo je nova različica SYLAJ Evidenca.';
+      const btn = document.createElement('button'); btn.textContent = 'Posodobi zdaj';
+      btn.style.cssText='background:#fff;color:#0a4d8c;border:0;border-radius:7px;padding:10px 16px;font-weight:bold;cursor:pointer';
+      btn.onclick = async () => {
+        btn.disabled=true; btn.textContent='Posodabljanje...';
+        try { if ('serviceWorker' in navigator) { const r=await navigator.serviceWorker.getRegistration(); if(r) await r.update(); } } catch(e) {}
+        const url = new URL('./index.html', location.href); url.searchParams.set('v',info.version);
+        location.replace(url.href);
+      };
+      const later = document.createElement('button'); later.textContent='Pozneje';
+      later.style.cssText='background:transparent;color:white;border:1px solid white;border-radius:7px;padding:9px 12px;cursor:pointer';
+      later.onclick=()=>banner.remove();
+      banner.append(msg,btn,later);document.body.appendChild(banner);
+    } catch(e) { /* offline or temporary network error */ }
+  }
+  window.addEventListener('load', checkUpdate);
+  window.addEventListener('online', checkUpdate);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});
+  setInterval(checkUpdate, 5*60*1000);
+})();
 </script>
 </body>
 </html>

@@ -921,7 +921,7 @@ async function doLogout() {
 
 async function loadTeams() {
   const { data } = await supabaseClient.from('ekipe').select('id, naziv, vodja_id');
-  state.cache.teams = data || [];
+  state.cache.teams = (data || []).filter(t=>isAdmin||userTeamIds.some(id=>String(id)===String(t.id)));
   return state.cache.teams;
 }
 
@@ -935,9 +935,9 @@ async function loadWorkers() {
 }
 
 async function loadSites() {
-  let q = supabaseClient.from('gradbisca').select('id, naziv, naslov, ekipa_id').is('izbrisano_at', null).order('naziv');
-  if (!isAdmin && userTeamIds.length) q = q.in('ekipa_id', userTeamIds);
-  const { data } = await q;
+  let q = supabaseClient.from('gradbisca').select('id, naziv, naslov, ekipa_id, sylaj_active').is('izbrisano_at', null).order('naziv');
+  if (!isAdmin) { if(!userTeamIds.length){state.cache.sites=[];return [];} q=q.in('ekipa_id',userTeamIds); }
+  const { data,error } = await q; if(error)throw error;
   state.cache.sites = data || [];
   return state.cache.sites;
 }
@@ -1008,6 +1008,7 @@ async function saveHourRecord(record, id = null) {
   };
 
   if (!isAdmin) {
+    if(!payload.gradbisce_id || !state.cache.sites.some(s=>String(s.id)===String(payload.gradbisce_id)&&String(s.ekipa_id)===String(payload.ekipa_id)&&(s.sylaj_active||id&&state.cache.hours.some(h=>String(h.id)===String(id)&&String(h.gradbisce_id)===String(s.id))))){alert('Izberite aktivno gradbišče svoje ekipe.');return false;}
     if (!String(payload.opomba || '').trim()) {
       alert('Opis opravljenega dela je obvezen. Brez opisa ur ni mogoče shraniti.');
       return false;
@@ -1072,7 +1073,7 @@ function invoiceEsc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 function invoiceNum(v){const x=Number(String(v??'').replace(/\s/g,'').replace(',','.'));return Number.isFinite(x)?x:0;}
 function invoiceMoney(n){return n.toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
 function invoiceRateOptions(rate){return [['22','22 %'],['9.5','9,5 %'],['5','5 %'],['0','0 %'],['exempt','Oproščeno DDV'],['reverse','Obrnjena davčna obveznost'],['outside','Ni predmet DDV']].map(([v,l])=>`<option value="${v}" ${rate===v?'selected':''}>${l}</option>`).join('');}
-function renderInvoices(){
+function renderInvoices(){if(!isAdmin)return;
  const el=document.getElementById('content');if(!el)return;
  el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')">← Nazaj</button><div class="title-area"><h2>🧾 Računi</h2></div></div>
  <div style="padding:16px;max-width:760px;margin:auto">
@@ -1328,7 +1329,7 @@ async function invoiceArchive(id){
 let serviceRows=[],serviceAssets=[],serviceFilter='vsi';
 const serviceKinds={bager:'🚜 Bager',vozilo:'🚐 Vozilo',orodje:'🧰 Orodje',drugo:'🔧 Druga oprema'};
 function serviceEsc(v){return machineEsc(v);}
-async function renderServices(){
+async function renderServices(){if(!isAdmin)return;
  const el=document.getElementById('content');
  el.innerHTML='<div class="empty-state">Nalaganje servisov...</div>';
  const results=await Promise.all([
@@ -1517,7 +1518,7 @@ async function galleryOpen(key){
  galleryFolder=key;const entry=gallerySections.find(x=>x[0]===key);if(!entry)return renderGallery();
  galleryShell(entry[2],'<p>Nalaganje map...</p>');
  const type=key==='sites'?'gradbisca':key==='depo'?'orodja':key;
- const {data,error}=await supabaseClient.from(type).select('*').limit(1000);
+ let q=supabaseClient.from(type).select('*').limit(1000); if(!isAdmin&&key==='sites'){if(!userTeamIds.length)return; q=q.in('ekipa_id',userTeamIds);} if(!isAdmin&&key==='vozila'){if(!userTeamIds.length)return;q=q.in('ekipa_id',userTeamIds);} if(!isAdmin&&key==='bagerji')return galleryShell(entry[2],'<p>Ni dostopa.</p>'); const {data,error}=await q;
  if(error){galleryShell(entry[2],`<button class="action-btn" onclick="renderGallery()">← Mape</button><p style="color:#b91c1c">${machineEsc(error.message)}</p>`);return;}
  const items=(data||[]).filter(r=>!r.izbrisano_at).sort((a,b)=>String(a.naziv||'').localeCompare(String(b.naziv||'')));
  galleryItems=items;
@@ -1642,7 +1643,7 @@ const sylajQuickModules = [
 ];
 function sylajNavText(sl,sq,en){return currentLang==='sq'?sq:currentLang==='en'?en:sl;}
 function sylajNavEscape(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function sylajNavLinks(rows){return rows.map(([id,emoji,sl,sq,en])=>`<button type="button" class="action-btn" style="display:block;width:100%;text-align:left;margin:8px 0;padding:14px" onclick="navigate('${id}')">${emoji} ${sylajNavEscape(sylajNavText(sl,sq,en))} ›</button>`).join('');}
+function sylajNavLinks(rows){return rows.filter(r=>pageAllowed(r[0])).map(([id,emoji,sl,sq,en])=>`<button type="button" class="action-btn" style="display:block;width:100%;text-align:left;margin:8px 0;padding:14px" onclick="navigate('${id}')">${emoji} ${sylajNavEscape(sylajNavText(sl,sq,en))} ›</button>`).join('');}
 function renderNavSearch(){
  const c=document.getElementById('content');
  c.innerHTML=`<div style="padding:18px"><h2>${sylajNavText('Iskanje','Kërkimi','Search')}</h2><input id="sylaj-search-input" class="form-input" style="width:100%;padding:12px" type="search" placeholder="${sylajNavText('Poiščite modul','Kërko modulin','Find a module')}" aria-label="${sylajNavText('Poiščite modul','Kërko modulin','Find a module')}"><div id="sylaj-search-results"></div></div>`;
@@ -1654,7 +1655,10 @@ function renderNavAdd(){
  const c=document.getElementById('content');
  c.innerHTML=`<div style="padding:18px"><h2>${sylajNavText('Hitri dostop','Hyrje e shpejtë','Quick access')}</h2><p>${sylajNavText('Izberite modul za nov vnos.','Zgjidh modulin ku dëshiron të regjistrosh të dhëna.','Choose a module to enter information.')}</p>${sylajNavLinks(sylajQuickModules.filter(r=>['hours','sites','machines','depot','invoices','fuel','services','cleaning','calendar'].includes(r[0])))}</div>`;
 }
+const adminPages = ['gpsTeams','invoices','fuel','services','docs'];
+function pageAllowed(page){return isAdmin || !adminPages.includes(page);}
 function navigate(page) {
+ if(!currentUser || !pageAllowed(page)) return;
  if(typeof depotStopInlineCamera === "function")depotStopInlineCamera();
  if(typeof sylajCamStop === "function")sylajCamStop();
   const content = document.getElementById('content');
@@ -1709,7 +1713,7 @@ async function renderHome() {
     { id: 'calendar', icon: '📅', title: t('calendar'), desc: t('calendarDesc') }
   ];
   // GPS map for admin, sharing for leaders
-  if (isAdmin || currentProfile?.vloga === 'vodja') {
+  if (isAdmin) {
     modules.push({
       id: 'gpsTeams',
       icon: '📍',
@@ -1718,7 +1722,7 @@ async function renderHome() {
     });
   }
   let html = `<div class="module-grid">`;
-  modules.forEach(m => {
+  modules.filter(m=>pageAllowed(m.id)).forEach(m => {
     html += `<div class="module-card" onclick="navigate('${m.id}')"><span class="icon">${m.icon}</span><div class="title">${m.title}</div><div class="desc">${m.desc}</div><span class="arrow">›</span></div>`;
   });
   html += `</div><div class="quick-overview"><span class="quick-label">${t('quick')}</span>
@@ -1879,7 +1883,7 @@ function fuelDraw(){const rows=fuelPeriodRows(),target=document.getElementById('
  const teams=fuelGroup(rows.filter(x=>x.ekipa_id!=null),fuelTeam);
  target.innerHTML=`<h3>⛽ ${fuelTxt('Skupaj','Gjithsej','Total')}: ${fuelNum(rows.reduce((s,r)=>s+Number(r.litri||0),0))} L</h3><p style="font-size:12px;color:#64748b">${fuelTxt('Vsak vnos je v skupnem seštevku štet samo enkrat. Vnosi brez ekipe ostanejo brez ekipe.','Çdo regjistrim numërohet vetëm një herë. Regjistrimet pa ekip nuk caktohen automatikisht.','Each entry counts once. Unassigned entries remain unassigned.')}</p><h3>🚜 ${fuelTxt('Bagerji','Bagerët','Excavators')}</h3>${fuelSummaryTable(fuelGroup(b,r=>fuelMachine(r)))}<h3>🚐 ${fuelTxt('Vozila in registracije','Automjetet dhe targat','Vehicles and plates')}</h3>${fuelSummaryTable(fuelGroup(v,r=>fuelMachine(r)+(fuelPlate(r)?' · '+fuelPlate(r):'')))}<h3>👷 ${fuelTxt('Ekipe','Ekipet','Teams')}</h3>${fuelSummaryTable(teams)}<h3>📅 ${fuelTxt('Vsi vnosi','Të gjitha regjistrimet','All entries')}</h3><div class="table-wrap"><table><thead><tr><th>Datum</th><th>${fuelTxt('Vrsta','Lloji','Type')}</th><th>${fuelTxt('Stroj / vozilo','Makina / automjeti','Machine / vehicle')}</th><th>${fuelTxt('Registracija','Targa','Plate')}</th><th>Ekipa</th><th>Litri</th><th>h / km</th></tr></thead><tbody>${rows.sort((a,b)=>b.datum.localeCompare(a.datum)).map(r=>`<tr><td>${machineEsc(r.datum)}</td><td>${machineEsc(r.kind)}</td><td>${machineEsc(fuelMachine(r))}</td><td>${machineEsc(fuelPlate(r))}</td><td>${machineEsc(fuelTeam(r))}</td><td>${fuelNum(r.litri)}</td><td>${r.kind==='bagerji'?fuelNum(Number(r.ure_konec)-Number(r.ure_zacetek))+' h':r.km_stanje==null?'—':machineEsc(r.km_stanje)+' km'}</td></tr>`).join('')}</tbody></table></div>`;
 }
-async function renderFuel(){const el=document.getElementById('content');el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')">←</button><div class="title-area"><h2>⛽ ${fuelTxt('Gorivo','Nafta','Fuel')}</h2></div></div><div style="padding:14px" id="fuel-body">${fuelTxt('Nalaganje','Duke ngarkuar','Loading')}...</div>`;
+async function renderFuel(){if(!isAdmin)return;const el=document.getElementById('content');el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')">←</button><div class="title-area"><h2>⛽ ${fuelTxt('Gorivo','Nafta','Fuel')}</h2></div></div><div style="padding:14px" id="fuel-body">${fuelTxt('Nalaganje','Duke ngarkuar','Loading')}...</div>`;
  if(!isAdmin){document.getElementById('fuel-body').textContent=fuelTxt('Pregled je trenutno samo za administratorja.','Raporti për momentin është vetëm për administratorin.','Admin-only report for now.');return;}
  try{await fuelLoad();}catch(e){document.getElementById('fuel-body').textContent='Supabase: '+e.message;return;}
  const now=new Date(),years=[...new Set([now.getFullYear(),...fuelEntries.map(x=>Number(x.datum?.slice(0,4))).filter(Boolean)])].sort((a,b)=>b-a);
@@ -2412,7 +2416,7 @@ function openHoursModal(id = null) {
       <div class="form-group"><label>${t('worker')}</label><select id="m-worker">${state.cache.workers.map(w => `<option value="${w.id}" ${rec?.delavec_id==w.id?'selected':''}>${w.ime_priimek}</option>`).join('')}</select></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>${t('site')}</label><select id="m-site"><option value="">—</option>${state.cache.sites.map(s => `<option value="${s.id}" ${rec?.gradbisce_id==s.id?'selected':''}>${s.naziv}</option>`).join('')}</select></div>
+      <div class="form-group"><label>${t('site')}</label><select id="m-site"><option value="">—</option>${state.cache.sites.filter(s=>isAdmin||s.sylaj_active||rec?.gradbisce_id==s.id).map(s => `<option value="${s.id}" ${(rec?rec.gradbisce_id==s.id:!isAdmin&&s.sylaj_active)?'selected':''}>${siteSafe(s.naziv)}</option>`).join('')}</select></div>
       <div class="form-group"><label>${t('team')}</label><select id="m-team">${state.cache.teams.map(t => `<option value="${t.id}" ${rec?.ekipa_id==t.id?'selected':''}>${t.naziv}</option>`).join('')}</select></div>
     </div>
     <div class="form-row">
@@ -2634,7 +2638,7 @@ async function renderSites() {
  content.innerHTML='<div class="empty-state">Nalaganje gradbišč...</div>';
  try{await loadSites();}catch(e){content.innerHTML='<div class="empty-state">Napaka: '+siteSafe(e.message)+'</div>';return;}
  content.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')"><i class="fas fa-arrow-left"></i> Nazaj</button><div class="title-area"><h2>🏗️ Gradbišča</h2></div><button class="home-btn" onclick="navigate('home')"><i class="fas fa-home"></i></button></div>
- <div style="padding:14px"><div class="action-bar">${isAdmin?'<button class="action-btn" onclick="siteAdd()">+ Dodaj gradbišče</button>':''}</div>
+ <div style="padding:14px"><div class="action-bar">${(isAdmin||userTeamIds.length)?'<button class="action-btn" onclick="siteAdd()">+ Dodaj gradbišče</button>':''}</div>
  <input class="filter-select" style="width:100%;margin:10px 0" placeholder="Poišči gradbišče po imenu ali naslovu" value="${siteSafe(siteSearchText)}" oninput="siteSearchText=this.value;siteFilterList()" />
  <div id="siteList"></div></div>`;
  siteFilterList();
@@ -2643,16 +2647,18 @@ function siteFilterList(){
  const el=document.getElementById('siteList');if(!el)return;
  const search=siteSearchText.toLocaleLowerCase('sl');
  const filtered=state.cache.sites.filter(s=>(s.naziv+' '+(s.naslov||'')).toLocaleLowerCase('sl').includes(search));
- el.innerHTML=filtered.map(s=>`<div class="settings-item" style="cursor:pointer;margin-bottom:8px" onclick="siteOpen('${siteSafe(s.id)}')"><i class="fas fa-hard-hat"></i><span><b>${siteSafe(s.naziv)}</b><br><small>${siteSafe(s.naslov||'Naslov ni vpisan')}</small></span><i class="fas fa-chevron-right" style="margin-left:auto"></i></div>`).join('')||'<div class="empty-state">Ni gradbišč.</div>';
+ el.innerHTML=filtered.map(s=>`<div class="settings-item" style="cursor:pointer;margin-bottom:8px" onclick="siteOpen('${siteSafe(s.id)}')"><i class="fas fa-hard-hat"></i><span><b>${siteSafe(s.naziv)} ${s.sylaj_active?'🟢 Aktivno':'⚪ Zaključeno'}</b><br><small>${siteSafe(s.naslov||'Naslov ni vpisan')}</small></span><i class="fas fa-chevron-right" style="margin-left:auto"></i></div>`).join('')||'<div class="empty-state">Ni gradbišč.</div>';
 }
 async function siteAdd(){
- if(!isAdmin)return;
+ if(!isAdmin&&!userTeamIds.length)return;
  const name=prompt('Naziv gradbišča:');if(!name?.trim())return;
  const address=prompt('Naslov gradbišča (neobvezno):')||'';
- const {data,error}=await supabaseClient.from('gradbisca').insert({naziv:name.trim(),naslov:address.trim()}).select('id').single();
+ await loadTeams(); const teams=state.cache.teams.filter(t=>isAdmin||userTeamIds.some(x=>String(x)===String(t.id))); const team=teams.length===1?teams[0]:teams[Number(prompt(teams.map((t,i)=>`${i+1}. ${t.naziv}`).join('\n')))-1]; if(!team)return;
+ const {data,error}=await supabaseClient.rpc('sylaj_site_create',{p_name:name.trim(),p_address:address.trim(),p_team:String(team.id)});
  if(error)return alert('Gradbišča ni bilo mogoče dodati: '+error.message);
- await renderSites();if(data?.id!=null)await siteOpen(data.id);
+ await renderSites();if(data!=null)await siteOpen(data);
 }
+async function siteSetActive(id,active){const {error}=await supabaseClient.rpc('sylaj_site_activate',{p_site:String(id),p_active:active});if(error)return alert(error.message);await loadSites();await siteOpen(id);}
 async function siteEdit(id){
  if(!isAdmin)return;const site=state.cache.sites.find(s=>String(s.id)===String(id));if(!site)return;
  const name=prompt('Naziv gradbišča:',site.naziv);if(!name?.trim())return;
@@ -2691,6 +2697,7 @@ async function siteOpen(id){
  content.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="renderSites()"><i class="fas fa-arrow-left"></i> Nazaj</button><div class="title-area"><h2>🏗️ Gradbišče</h2></div><button class="home-btn" onclick="navigate('home')"><i class="fas fa-home"></i></button></div>
  <div style="padding:14px"><div class="settings-list"><div class="settings-item"><i class="fas fa-map-marker-alt"></i><span><b>${siteSafe(site.naziv)}</b><br>${siteSafe(site.naslov||'Naslov ni vpisan')}</span></div></div>
  ${isAdmin?`<div class="action-bar" style="margin-top:12px"><button class="action-btn" onclick="siteEdit('${siteSafe(id)}')">✏️ Uredi</button><button class="action-btn" onclick="siteArchive('${siteSafe(id)}')">🗄️ Arhiviraj</button></div>`:''}
+ <div class="action-bar">${site.ekipa_id!=null?`<button class="action-btn" onclick="siteSetActive('${siteSafe(id)}',${!site.sylaj_active})">${site.sylaj_active?'Zaključi':'Aktiviraj / ponovno aktiviraj'}</button>`:'<p>Gradbišče nima ekipe.</p>'}</div>
  <div class="worker-profile-section"><b>🕒 Delovne ure na gradbišču</b><p>${activeSiteRecords.length} zapisov · ${total.toFixed(2)} ur</p>
  ${errorText?`<p style="color:#b91c1c">Napaka pri branju: ${siteSafe(errorText)}</p>`:''}
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Mesec</th><th>Ure</th></tr></thead><tbody>${[...byMonth].sort((a,b)=>a[0].localeCompare(b[0])).map(([m,h])=>`<tr><td>${m}</td><td>${h.toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="2">Ni zapisov</td></tr>'}</tbody></table></div>
@@ -2707,7 +2714,7 @@ async function siteOpen(id){
 const SITE_PHOTO_BUCKET='sylaj-site-photos';
 function sitePhotoControls(id){
  const el=document.getElementById('sitePhotoActions');if(!el)return;
- el.innerHTML=isAdmin?`<button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);siteUploadPhotos('${siteSafe(id)}',{files:dt.files});})">📷 Fotografiraj</button><label class="action-btn" style="cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label>`:'';
+ el.innerHTML=state.cache.sites.some(s=>String(s.id)===String(id))?`<button type="button" class="action-btn" onclick="sylajOpenCamera(file=>{const dt=new DataTransfer();dt.items.add(file);siteUploadPhotos('${siteSafe(id)}',{files:dt.files});})">📷 Fotografiraj</button><label class="action-btn" style="cursor:pointer">🖼️ Galerija<input type="file" accept="image/*" multiple style="display:none" onchange="siteUploadPhotos('${siteSafe(id)}',this)"></label>`:'';
 }
 async function siteLoadPhotos(id){
  sitePhotoControls(id);
@@ -2733,7 +2740,7 @@ async function siteLoadPhotos(id){
  }catch(e){status.textContent='Fotografije niso povezane: '+e.message;}
 }
 async function siteUploadPhotos(id,input){
- if(!isAdmin)return;
+ if(!state.cache.sites.some(s=>String(s.id)===String(id)))return;
  const status=document.getElementById('sitePhotoStatus'),files=[...(input.files||[])];
  for(const file of files){
   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){alert('Dovoljene so JPG, PNG ali WebP fotografije do 8 MB.');continue;}
@@ -3109,7 +3116,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.24.5';
+  const CURRENT_VERSION = '2026.11.24.6';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3166,6 +3173,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
-<script src="./sylaj-gps-teams.js?v=2026.11.24.5"></script>
+<script src="./sylaj-gps-teams.js?v=2026.11.24.6"></script>
 </body>
 </html>

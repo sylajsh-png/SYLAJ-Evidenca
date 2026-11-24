@@ -920,7 +920,7 @@ async function doLogout() {
 }
 
 async function loadTeams() {
-  const { data } = await supabaseClient.from('ekipe').select('id, naziv, vodja_id');
+  const { data } = await supabaseClient.from('ekipe').select('id, naziv, vodja_id, aktivno_gradbisce_id');
   state.cache.teams = (data || []).filter(t=>isAdmin||userTeamIds.some(id=>String(id)===String(t.id)));
   return state.cache.teams;
 }
@@ -935,8 +935,8 @@ async function loadWorkers() {
 }
 
 async function loadSites() {
-  let q = supabaseClient.from('gradbisca').select('id, naziv, naslov, ekipa_id, sylaj_active').is('izbrisano_at', null).order('naziv');
-  if (!isAdmin) { if(!userTeamIds.length){state.cache.sites=[];return [];} q=q.in('ekipa_id',userTeamIds); }
+  let q = supabaseClient.from('gradbisca').select('id, naziv, naslov, ekipa_id').is('izbrisano_at', null).order('naziv');
+  if (!isAdmin && !userTeamIds.length){state.cache.sites=[];return [];}
   const { data,error } = await q; if(error)throw error;
   state.cache.sites = data || [];
   return state.cache.sites;
@@ -1008,7 +1008,7 @@ async function saveHourRecord(record, id = null) {
   };
 
   if (!isAdmin) {
-    if(!payload.gradbisce_id || !state.cache.sites.some(s=>String(s.id)===String(payload.gradbisce_id)&&String(s.ekipa_id)===String(payload.ekipa_id)&&(s.sylaj_active||id&&state.cache.hours.some(h=>String(h.id)===String(id)&&String(h.gradbisce_id)===String(s.id))))){alert('Izberite aktivno gradbišče svoje ekipe.');return false;}
+    if(!payload.gradbisce_id || !state.cache.sites.some(s=>String(s.id)===String(payload.gradbisce_id)&&(state.cache.teams.some(t=>String(t.id)===String(payload.ekipa_id)&&String(t.aktivno_gradbisce_id)===String(s.id))||id&&state.cache.hours.some(h=>String(h.id)===String(id)&&String(h.gradbisce_id)===String(s.id))))){alert('Izberite aktivno gradbišče svoje ekipe.');return false;}
     if (!String(payload.opomba || '').trim()) {
       alert('Opis opravljenega dela je obvezen. Brez opisa ur ni mogoče shraniti.');
       return false;
@@ -1518,7 +1518,7 @@ async function galleryOpen(key){
  galleryFolder=key;const entry=gallerySections.find(x=>x[0]===key);if(!entry)return renderGallery();
  galleryShell(entry[2],'<p>Nalaganje map...</p>');
  const type=key==='sites'?'gradbisca':key==='depo'?'orodja':key;
- let q=supabaseClient.from(type).select('*').limit(1000); if(!isAdmin&&key==='sites'){if(!userTeamIds.length)return; q=q.in('ekipa_id',userTeamIds);} if(!isAdmin&&key==='vozila'){if(!userTeamIds.length)return;q=q.in('ekipa_id',userTeamIds);} if(!isAdmin&&key==='bagerji')return galleryShell(entry[2],'<p>Ni dostopa.</p>'); const {data,error}=await q;
+ let q=supabaseClient.from(type).select('*').limit(1000); if(!isAdmin&&key==='sites'&&!userTeamIds.length)return; if(!isAdmin&&key==='vozila'){if(!userTeamIds.length)return;q=q.in('ekipa_id',userTeamIds);} if(!isAdmin&&key==='bagerji')return galleryShell(entry[2],'<p>Ni dostopa.</p>'); const {data,error}=await q;
  if(error){galleryShell(entry[2],`<button class="action-btn" onclick="renderGallery()">← Mape</button><p style="color:#b91c1c">${machineEsc(error.message)}</p>`);return;}
  const items=(data||[]).filter(r=>!r.izbrisano_at).sort((a,b)=>String(a.naziv||'').localeCompare(String(b.naziv||'')));
  galleryItems=items;
@@ -2416,7 +2416,7 @@ function openHoursModal(id = null) {
       <div class="form-group"><label>${t('worker')}</label><select id="m-worker">${state.cache.workers.map(w => `<option value="${w.id}" ${rec?.delavec_id==w.id?'selected':''}>${w.ime_priimek}</option>`).join('')}</select></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>${t('site')}</label><select id="m-site"><option value="">—</option>${state.cache.sites.filter(s=>isAdmin||s.sylaj_active||rec?.gradbisce_id==s.id).map(s => `<option value="${s.id}" ${(rec?rec.gradbisce_id==s.id:!isAdmin&&s.sylaj_active)?'selected':''}>${siteSafe(s.naziv)}</option>`).join('')}</select></div>
+      <div class="form-group"><label>${t('site')}</label><select id="m-site"><option value="">—</option>${state.cache.sites.filter(s=>isAdmin||siteIsActive(s.id)||rec?.gradbisce_id==s.id).map(s => `<option value="${s.id}" ${(rec?rec.gradbisce_id==s.id:!isAdmin&&siteIsActive(s.id))?'selected':''}>${siteSafe(s.naziv)}</option>`).join('')}</select></div>
       <div class="form-group"><label>${t('team')}</label><select id="m-team">${state.cache.teams.map(t => `<option value="${t.id}" ${rec?.ekipa_id==t.id?'selected':''}>${t.naziv}</option>`).join('')}</select></div>
     </div>
     <div class="form-row">
@@ -2636,7 +2636,7 @@ let siteSearchText='';
 async function renderSites() {
  const content=document.getElementById('content');
  content.innerHTML='<div class="empty-state">Nalaganje gradbišč...</div>';
- try{await loadSites();}catch(e){content.innerHTML='<div class="empty-state">Napaka: '+siteSafe(e.message)+'</div>';return;}
+ try{await Promise.all([loadSites(),loadTeams()]);}catch(e){content.innerHTML='<div class="empty-state">Napaka: '+siteSafe(e.message)+'</div>';return;}
  content.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')"><i class="fas fa-arrow-left"></i> Nazaj</button><div class="title-area"><h2>🏗️ Gradbišča</h2></div><button class="home-btn" onclick="navigate('home')"><i class="fas fa-home"></i></button></div>
  <div style="padding:14px"><div class="action-bar">${(isAdmin||userTeamIds.length)?'<button class="action-btn" onclick="siteAdd()">+ Dodaj gradbišče</button>':''}</div>
  <input class="filter-select" style="width:100%;margin:10px 0" placeholder="Poišči gradbišče po imenu ali naslovu" value="${siteSafe(siteSearchText)}" oninput="siteSearchText=this.value;siteFilterList()" />
@@ -2647,18 +2647,20 @@ function siteFilterList(){
  const el=document.getElementById('siteList');if(!el)return;
  const search=siteSearchText.toLocaleLowerCase('sl');
  const filtered=state.cache.sites.filter(s=>(s.naziv+' '+(s.naslov||'')).toLocaleLowerCase('sl').includes(search));
- el.innerHTML=filtered.map(s=>`<div class="settings-item" style="cursor:pointer;margin-bottom:8px" onclick="siteOpen('${siteSafe(s.id)}')"><i class="fas fa-hard-hat"></i><span><b>${siteSafe(s.naziv)} ${s.sylaj_active?'🟢 Aktivno':'⚪ Zaključeno'}</b><br><small>${siteSafe(s.naslov||'Naslov ni vpisan')}</small></span><i class="fas fa-chevron-right" style="margin-left:auto"></i></div>`).join('')||'<div class="empty-state">Ni gradbišč.</div>';
+ el.innerHTML=filtered.map(s=>`<div class="settings-item" style="cursor:pointer;margin-bottom:8px" onclick="siteOpen('${siteSafe(s.id)}')"><i class="fas fa-hard-hat"></i><span><b>${siteSafe(s.naziv)} ${siteIsActive(s.id)?'🟢 Aktivno':'⚪ Zaključeno'}</b><br><small>${siteSafe(s.naslov||'Naslov ni vpisan')}</small></span><i class="fas fa-chevron-right" style="margin-left:auto"></i></div>`).join('')||'<div class="empty-state">Ni gradbišč.</div>';
 }
 async function siteAdd(){
  if(!isAdmin&&!userTeamIds.length)return;
  const name=prompt('Naziv gradbišča:');if(!name?.trim())return;
  const address=prompt('Naslov gradbišča (neobvezno):')||'';
  await loadTeams(); const teams=state.cache.teams.filter(t=>isAdmin||userTeamIds.some(x=>String(x)===String(t.id))); const team=teams.length===1?teams[0]:teams[Number(prompt(teams.map((t,i)=>`${i+1}. ${t.naziv}`).join('\n')))-1]; if(!team)return;
- const {data,error}=await supabaseClient.rpc('sylaj_site_create',{p_name:name.trim(),p_address:address.trim(),p_team:String(team.id)});
+ const {data,error}=await supabaseClient.from('gradbisca').insert({naziv:name.trim(),naslov:address.trim(),created_by:currentUser.id,ekipa_id:team.id}).select('id').single();
  if(error)return alert('Gradbišča ni bilo mogoče dodati: '+error.message);
- await renderSites();if(data!=null)await siteOpen(data);
+ if(data?.id!=null){const {error:activationError}=await supabaseClient.rpc('sylaj_aktiviraj_gradbisce',{p_ekipa_id:team.id,p_gradbisce_id:data.id});if(activationError)alert(activationError.message);} await renderSites();if(data?.id!=null)await siteOpen(data.id);
 }
-async function siteSetActive(id,active){const {error}=await supabaseClient.rpc('sylaj_site_activate',{p_site:String(id),p_active:active});if(error)return alert(error.message);await loadSites();await siteOpen(id);}
+function siteIsActive(id){return state.cache.teams.some(t=>String(t.aktivno_gradbisce_id)===String(id));}
+async function siteSetActive(id,teamId,active){const {error}=await supabaseClient.rpc('sylaj_aktiviraj_gradbisce',{p_ekipa_id:Number(teamId),p_gradbisce_id:active?Number(id):null});if(error)return alert(error.message);await loadTeams();await siteOpen(id);}
+
 async function siteEdit(id){
  if(!isAdmin)return;const site=state.cache.sites.find(s=>String(s.id)===String(id));if(!site)return;
  const name=prompt('Naziv gradbišča:',site.naziv);if(!name?.trim())return;
@@ -2697,7 +2699,7 @@ async function siteOpen(id){
  content.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="renderSites()"><i class="fas fa-arrow-left"></i> Nazaj</button><div class="title-area"><h2>🏗️ Gradbišče</h2></div><button class="home-btn" onclick="navigate('home')"><i class="fas fa-home"></i></button></div>
  <div style="padding:14px"><div class="settings-list"><div class="settings-item"><i class="fas fa-map-marker-alt"></i><span><b>${siteSafe(site.naziv)}</b><br>${siteSafe(site.naslov||'Naslov ni vpisan')}</span></div></div>
  ${isAdmin?`<div class="action-bar" style="margin-top:12px"><button class="action-btn" onclick="siteEdit('${siteSafe(id)}')">✏️ Uredi</button><button class="action-btn" onclick="siteArchive('${siteSafe(id)}')">🗄️ Arhiviraj</button></div>`:''}
- <div class="action-bar">${site.ekipa_id!=null?`<button class="action-btn" onclick="siteSetActive('${siteSafe(id)}',${!site.sylaj_active})">${site.sylaj_active?'Zaključi':'Aktiviraj / ponovno aktiviraj'}</button>`:'<p>Gradbišče nima ekipe.</p>'}</div>
+ <div class="action-bar">${state.cache.teams.map(t=>{const active=String(t.aktivno_gradbisce_id)===String(id);return `<button class="action-btn" onclick="siteSetActive('${siteSafe(id)}','${siteSafe(t.id)}',${!active})">${siteSafe(t.naziv)}: ${active?'Zaključi':'Aktiviraj / ponovno aktiviraj'}</button>`;}).join('')}</div>
  <div class="worker-profile-section"><b>🕒 Delovne ure na gradbišču</b><p>${activeSiteRecords.length} zapisov · ${total.toFixed(2)} ur</p>
  ${errorText?`<p style="color:#b91c1c">Napaka pri branju: ${siteSafe(errorText)}</p>`:''}
  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Mesec</th><th>Ure</th></tr></thead><tbody>${[...byMonth].sort((a,b)=>a[0].localeCompare(b[0])).map(([m,h])=>`<tr><td>${m}</td><td>${h.toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="2">Ni zapisov</td></tr>'}</tbody></table></div>
@@ -3116,7 +3118,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.24.6';
+  const CURRENT_VERSION = '2026.11.24.7';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3173,6 +3175,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
-<script src="./sylaj-gps-teams.js?v=2026.11.24.6"></script>
+<script src="./sylaj-gps-teams.js?v=2026.11.24.7"></script>
 </body>
 </html>

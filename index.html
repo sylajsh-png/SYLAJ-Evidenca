@@ -1518,7 +1518,7 @@ async function galleryOpen(key){
  galleryFolder=key;const entry=gallerySections.find(x=>x[0]===key);if(!entry)return renderGallery();
  galleryShell(entry[2],'<p>Nalaganje map...</p>');
  const type=key==='sites'?'gradbisca':key==='depo'?'orodja':key;
- let q=supabaseClient.from(type).select('*').limit(1000); if(!isAdmin&&key==='sites'&&!userTeamIds.length)return; if(!isAdmin&&key==='vozila'){if(!userTeamIds.length)return;q=q.in('ekipa_id',userTeamIds);} if(!isAdmin&&key==='bagerji')return galleryShell(entry[2],'<p>Ni dostopa.</p>'); const {data,error}=await q;
+ let q=supabaseClient.from(type).select('*').limit(1000); if(!isAdmin&&key==='sites'&&!userTeamIds.length)return; const {data,error}=await q;
  if(error){galleryShell(entry[2],`<button class="action-btn" onclick="renderGallery()">← Mape</button><p style="color:#b91c1c">${machineEsc(error.message)}</p>`);return;}
  const items=(data||[]).filter(r=>!r.izbrisano_at).sort((a,b)=>String(a.naziv||'').localeCompare(String(b.naziv||'')));
  galleryItems=items;
@@ -1606,7 +1606,7 @@ async function renderCalendar(){
  const el=document.getElementById('content');el.innerHTML='<div class="empty-state">Nalaganje koledarja...</div>';
  const {data,error}=await supabaseClient.from('sylaj_opomniki').select('*').is('deleted_at',null).order('datum',{ascending:true}).limit(1000);
  calItems=data||[];
- el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')">← Nazaj</button><div class="title-area"><h2>📅 Koledar in obvestila</h2></div><button class="home-btn" onclick="navigate('home')">⌂</button></div><div style="padding:16px"><p>Skupni opomniki so vidni Fitimu in Lumiju. Zasebni dokumenti so vidni samo administratorju.</p><p style="color:#9a3412">Obvestila na zaprtem telefonu še niso aktivirana (potreben je Web Push).</p>${isAdmin?'<button class="action-btn" onclick="calForm()">➕ Dodaj opomnik</button>':''}<label style="display:block;margin-top:14px">Mesec <input class="form-input" type="month" value="${calEsc(calMonth)}" onchange="calMonth=this.value;calDraw()"></label><div id="cal-list"></div>${error?`<p style="color:#b91c1c">Napaka pri branju: ${calEsc(error.message)}. Najprej izvedite SQL.</p>`:''}</div>`;
+ el.innerHTML=`<div class="sub-header"><button class="back-btn" onclick="navigate('home')">← Nazaj</button><div class="title-area"><h2>📅 Koledar in obvestila</h2></div><button class="home-btn" onclick="navigate('home')">⌂</button></div><div style="padding:16px"><p>Skupni opomniki so vidni Fitimu in Lumiju. Zasebni dokumenti so vidni samo administratorju.</p><p style="color:#9a3412">Obvestila na zaprtem telefonu še niso aktivirana (potreben je Web Push).</p>${(isAdmin||userTeamIds.length)?'<button class="action-btn" onclick="calForm()">➕ Dodaj opomnik</button>':''}<label style="display:block;margin-top:14px">Mesec <input class="form-input" type="month" value="${calEsc(calMonth)}" onchange="calMonth=this.value;calDraw()"></label><div id="cal-list"></div>${error?`<p style="color:#b91c1c">Napaka pri branju: ${calEsc(error.message)}. Najprej izvedite SQL.</p>`:''}</div>`;
  calDraw();
 }
 function calDraw(){
@@ -1614,13 +1614,13 @@ function calDraw(){
  const rows=calItems.filter(x=>x.datum?.slice(0,7)===calMonth);
  el.innerHTML=rows.length?rows.map(r=>`<div style="padding:12px;margin:10px 0;border:1px solid #cbd5e1;border-radius:10px"><b>${calEsc(r.naslov)}</b> · ${calEsc(r.datum)} ${calEsc(r.ura||'')}<p>${calEsc(r.opis||'')}</p><small>${r.zasebno?'🔒 Zasebno (admin)':'👥 Skupno'} · ${calEsc(r.ponavljanje||'brez')}</small>${isAdmin?`<div><button class="action-btn" onclick="calForm('${calEsc(r.id)}')">Uredi</button> <button class="action-btn" onclick="calArchive('${calEsc(r.id)}')">Arhiviraj</button></div>`:''}</div>`).join(''):'<p>V izbranem mesecu ni opomnikov.</p>';
 }
-function calForm(id){if(!isAdmin)return;const r=calItems.find(x=>String(x.id)===String(id))||{};
- document.getElementById('cal-list').innerHTML=`<div style="border:1px solid #cbd5e1;padding:14px;border-radius:10px;margin-top:14px"><h3>${id?'Uredi opomnik':'Nov opomnik'}</h3><label>Naslov <input id="cal-title" class="form-input" style="width:100%" value="${calEsc(r.naslov||'')}"></label><label>Opis <textarea id="cal-desc" class="form-input" style="width:100%">${calEsc(r.opis||'')}</textarea></label><label>Datum <input id="cal-date" type="date" class="form-input" style="width:100%" value="${calEsc(r.datum||sloveniaToday())}"></label><label>Ura <input id="cal-time" type="time" class="form-input" style="width:100%" value="${calEsc(r.ura?.slice(0,5)||'12:00')}"></label><label>Ponavljanje <select id="cal-repeat" class="form-input" style="width:100%">${[['brez','Brez'],['dnevno','Dnevno'],['tedensko','Tedensko'],['mesecno','Mesečno']].map(([v,t])=>`<option value="${v}" ${r.ponavljanje===v?'selected':''}>${t}</option>`).join('')}</select></label><label><input type="checkbox" id="cal-private" ${r.zasebno?'checked':''}> 🔒 Zasebno (samo admin)</label><p id="cal-status" style="color:#b91c1c"></p><button class="action-btn" onclick="calSave('${calEsc(id||'')}')">💾 Shrani</button> <button class="action-btn" onclick="calDraw()">Prekliči</button></div>`;
+function calForm(id){if(!isAdmin&&(id||!userTeamIds.length))return;const r=calItems.find(x=>String(x.id)===String(id))||{};
+ document.getElementById('cal-list').innerHTML=`<div style="border:1px solid #cbd5e1;padding:14px;border-radius:10px;margin-top:14px"><h3>${id?'Uredi opomnik':'Nov opomnik'}</h3><label>Naslov <input id="cal-title" class="form-input" style="width:100%" value="${calEsc(r.naslov||'')}"></label><label>Opis <textarea id="cal-desc" class="form-input" style="width:100%">${calEsc(r.opis||'')}</textarea></label><label>Datum <input id="cal-date" type="date" class="form-input" style="width:100%" value="${calEsc(r.datum||sloveniaToday())}"></label><label>Ura <input id="cal-time" type="time" class="form-input" style="width:100%" value="${calEsc(r.ura?.slice(0,5)||'12:00')}"></label><label>Ponavljanje <select id="cal-repeat" class="form-input" style="width:100%">${[['brez','Brez'],['dnevno','Dnevno'],['tedensko','Tedensko'],['mesecno','Mesečno']].map(([v,t])=>`<option value="${v}" ${r.ponavljanje===v?'selected':''}>${t}</option>`).join('')}</select></label><label><input type="checkbox" id="cal-private" ${isAdmin?'':'disabled'} ${r.zasebno?'checked':''}> 🔒 Zasebno (samo admin)</label><p id="cal-status" style="color:#b91c1c"></p><button class="action-btn" onclick="calSave('${calEsc(id||'')}')">💾 Shrani</button> <button class="action-btn" onclick="calDraw()">Prekliči</button></div>`;
 }
-async function calSave(id){if(!isAdmin)return;
+async function calSave(id){if(!isAdmin&&(id||!userTeamIds.length))return;
  const v=k=>document.getElementById(k)?.value||'';
  const naslov=v('cal-title').trim(),datum=v('cal-date');if(!naslov||!datum){document.getElementById('cal-status').textContent='Vnesite naslov in datum.';return;}
- const payload={naslov,opis:v('cal-desc').trim(),datum,ura:v('cal-time')||null,ponavljanje:v('cal-repeat'),zasebno:document.getElementById('cal-private').checked};
+ const payload={naslov,opis:v('cal-desc').trim(),datum,ura:v('cal-time')||null,ponavljanje:v('cal-repeat'),zasebno:isAdmin&&document.getElementById('cal-private').checked};
  const {error}=id?await supabaseClient.from('sylaj_opomniki').update(payload).eq('id',id):await supabaseClient.from('sylaj_opomniki').insert({...payload,created_by:currentUser.id});
  if(error){document.getElementById('cal-status').textContent=error.message;return;}calMonth=datum.slice(0,7);await renderCalendar();
 }
@@ -1748,7 +1748,7 @@ function machineTeamOptions(){
  return teams;
 }
 function machineMayEdit(r){
- return isAdmin || (r.ekipa_id!=null && userTeamIds.some(id=>String(id)===String(r.ekipa_id)));
+ return isAdmin;
 }
 async function renderMachines(){
  await loadTeams();
@@ -1761,9 +1761,9 @@ async function renderMachines(){
   const response=queries[i].status==='fulfilled'?queries[i].value:null;
   const err=response?.error||(!response?new Error('Povezava ni uspela'):null);
   let data=response?.data||[];
-  if(!isAdmin)data=type==='bagerji'?[]:data.filter(r=>r.ekipa_id!=null&&userTeamIds.some(id=>String(id)===String(r.ekipa_id)));
+
   machineRows[type]=data;
-  html+=`<div class="worker-profile-section"><h3>${type==='bagerji'?'🚜 Bagerji':'🚚 Vozila'} (${data.length})</h3><div class="action-bar"><button class="action-btn" onclick="machineAdd('${type}')">+ Dodaj ${type==='bagerji'?'bager':'vozilo'}</button></div>`;
+  html+=`<div class="worker-profile-section"><h3>${type==='bagerji'?'🚜 Bagerji':'🚚 Vozila'} (${data.length})</h3>${isAdmin?`<div class="action-bar"><button class="action-btn" onclick="machineAdd('${type}')">+ Dodaj ${type==='bagerji'?'bager':'vozilo'}</button></div>`:''}`;
   if(err)html+=`<p>Napaka pri branju: ${machineEsc(err.message)}</p>`;
   else if(!data.length)html+='<p>Ni aktivnih zapisov.</p>';
   else html+=data.map((r,j)=>`<div class="settings-item" style="margin:8px 0;display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="display:flex;align-items:center;gap:12px;min-width:0"><div class="machine-thumb" id="machine-thumb-${type}-${j}">${type==='bagerji'?'🚜':'🚚'}</div><div><b>${machineEsc(machineLabel(r,type))}</b><br><small>${machineEsc(r.registracija||r.registrska_oznaka||'')}</small></div></div><button class="action-btn" onclick="showMachineDetail('${type}',${j})">Odpri</button></div>`).join('');
@@ -1774,6 +1774,7 @@ async function renderMachines(){
  await machineLoadThumbnails();
 }
 async function machineAdd(type){
+ if(!isAdmin)return;
  const teams=machineTeamOptions();
  if(!isAdmin&&!teams.length)return alert('Vaša ekipa ni določena. Preverite dodelitev ekipe pri administratorju.');
  if(type==='bagerji'&&!isAdmin)return alert('Dodajanje bagerjev za vodjo še ni omogočeno: v tabeli bagerji manjka ekipa_id. Najprej uredimo varnost v Supabase.');
@@ -1824,7 +1825,7 @@ function machineDailyNum(value){if(value===''||value==null)return null;const n=N
 function machineDailyDate(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
 async function machineDailyRender(index){
  const r=machineRows.bagerji?.[index], panel=document.getElementById('machine-daily-panel');if(!r||!panel)return;
- const allowed=isAdmin;
+ const allowed=isAdmin||userTeamIds.length>0;
  let html=`<h3>⏱️ Dnevni vnos – ure in gorivo</h3><p style="font-size:13px;color:#64748b">Vsak vnos ostane v zgodovini. Razlika ur se izračuna samodejno.</p>`;
  if(allowed)html+=`<form id="machine-daily-form" onsubmit="machineDailySave(event,${index})" style="display:grid;gap:10px;margin:12px 0"><label>Datum <input type="date" name="datum" value="${machineDailyDate()}" required></label><label>Začetno stanje (h) <input type="number" name="start" min="0" step="0.01" required></label><label>Končno stanje (h) <input type="number" name="end" min="0" step="0.01" required></label><label>Gorivo (litri) <input type="number" name="fuel" min="0" step="0.01" required></label><label>Ekipa <select name="team"><option value="">—</option>${machineTeamOptions().map(t=>`<option value="${machineEsc(t.id)}">${machineEsc(t.naziv||t.ime||t.id)}</option>`).join('')}</select></label><label>Opomba <textarea name="note" rows="2" placeholder="Neobvezno"></textarea></label><button class="action-btn" type="submit">💾 Shrani dnevni vnos</button></form>`;
  else html+='<p>Vnos trenutno omogočen samo administratorju, dokler ne uredimo varnostnih pravil za vodje ekip.</p>';
@@ -1836,15 +1837,15 @@ async function machineDailyRender(index){
  if(!data?.length){history.textContent='Ni dnevnih vnosov.';return;}
  let sumH=0,sumL=0;
  for(const x of data){sumH+=Number(x.ure_konec)-Number(x.ure_zacetek);sumL+=Number(x.litri);}
- history.innerHTML=`<p><b>Skupaj prikazani vnosi:</b> ${sumH.toFixed(2)} h · ${sumL.toFixed(2)} L</p><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Ure</th><th>Gorivo</th><th>Opomba</th><th></th></tr></thead><tbody>${data.map(x=>`<tr><td>${machineEsc(x.datum)}</td><td>${(Number(x.ure_konec)-Number(x.ure_zacetek)).toFixed(2)} h<br><small>${machineEsc(x.ure_zacetek)} → ${machineEsc(x.ure_konec)}</small></td><td>${machineEsc(x.litri)} L</td><td>${machineEsc(x.opomba||'')}</td><td>${allowed?`<button class="action-btn" onclick="machineDailyDelete(${index},'${machineEsc(x.id)}')">Izbriši</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
+ history.innerHTML=`<p><b>Skupaj prikazani vnosi:</b> ${sumH.toFixed(2)} h · ${sumL.toFixed(2)} L</p><div class="table-wrap"><table><thead><tr><th>Datum</th><th>Ure</th><th>Gorivo</th><th>Opomba</th><th></th></tr></thead><tbody>${data.map(x=>`<tr><td>${machineEsc(x.datum)}</td><td>${(Number(x.ure_konec)-Number(x.ure_zacetek)).toFixed(2)} h<br><small>${machineEsc(x.ure_zacetek)} → ${machineEsc(x.ure_konec)}</small></td><td>${machineEsc(x.litri)} L</td><td>${machineEsc(x.opomba||'')}</td><td>${isAdmin?`<button class="action-btn" onclick="machineDailyDelete(${index},'${machineEsc(x.id)}')">Izbriši</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
 }
 async function machineDailySave(event,index){
- event.preventDefault();if(!isAdmin||!currentUser)return;
+ event.preventDefault();if(!currentUser||(!isAdmin&&!userTeamIds.length))return;
  const r=machineRows.bagerji?.[index],form=event.currentTarget;if(!r||!form)return;
  const start=machineDailyNum(form.elements.start.value),end=machineDailyNum(form.elements.end.value),fuel=machineDailyNum(form.elements.fuel.value),datum=form.elements.datum.value;
  if(start===null||end===null||fuel===null||start<0||end<start||fuel<0||!/^\d{4}-\d{2}-\d{2}$/.test(datum))return alert('Preverite datum, ure in litre. Končno stanje mora biti večje ali enako začetnemu.');
  const btn=form.querySelector('button[type=submit]');btn.disabled=true;
- const {error}=await supabaseClient.from('sylaj_bager_dnevnik').insert({bager_id:String(r.id),datum,ure_zacetek:start,ure_konec:end,litri:fuel,opomba:form.elements.note.value.trim(),ekipa_id:form.elements.team.value||null,created_by:currentUser.id});
+ const {error}=await supabaseClient.from('sylaj_bager_dnevnik').insert({bager_id:String(r.id),datum,ure_zacetek:start,ure_konec:end,litri:fuel,opomba:form.elements.note.value.trim(),ekipa_id:isAdmin?(form.elements.team.value||null):userTeamIds[0],created_by:currentUser.id});
  if(error){btn.disabled=false;return alert('Shranjevanje ni uspelo: '+error.message);}
  await machineDailyRender(index);
 }
@@ -1904,9 +1905,9 @@ async function fuelSave(e){e.preventDefault();if(!isAdmin||!currentUser)return;c
 async function fuelVehiclePanel(index){
  const r=machineRows.vozila?.[index],panel=document.getElementById('vehicle-fuel-panel');if(!r||!panel)return;
  const id=String(r.id),plate=r.registracija||r.registrska_oznaka||'',name=machineLabel(r,'vozila');
- if(!isAdmin){panel.innerHTML=`<h3>⛽ ${fuelTxt('Gorivo vozila','Nafta e automjetit','Vehicle fuel')}</h3><p>${fuelTxt('Vnos goriva je trenutno dovoljen samo administratorju.','Regjistrimi i naftës tani lejohet vetëm për administratorin.','Fuel entry is currently admin-only.')}</p>`;return;}
+
  panel.innerHTML=`<h3>⛽ ${fuelTxt('Gorivo vozila','Nafta e automjetit','Vehicle fuel')}</h3><p>${machineEsc(name)} · ${machineEsc(plate)}</p><form id="vehicle-fuel-form" style="display:grid;gap:10px;padding:12px;border:1px solid #d4dce8;border-radius:12px"><label>📅 ${fuelTxt('Datum *','Data *','Date *')} <input name="datum" type="date" value="${fuelISO()}" required></label><label>⛽ ${fuelTxt('Litri *','Litra *','Litres *')} <input name="litri" type="number" min="0.01" step="0.01" required></label><label>🛣️ ${fuelTxt('Kilometri','Kilometrat','Odometer')} <input name="km" type="number" min="0" step="1"></label><label>👷 ${fuelTxt('Ekipa','Ekipi','Team')} <select name="team" id="vehicle-fuel-team"><option value="">—</option></select></label><label>${fuelTxt('Opomba','Shënim','Note')} <textarea name="note"></textarea></label><button class="action-btn" type="submit">💾 ${fuelTxt('Shrani gorivo','Ruaj naftën','Save fuel')}</button></form><h3>📅 ${fuelTxt('Zgodovina goriva','Historiku i naftës','Fuel history')}</h3><div id="vehicle-fuel-history">${fuelTxt('Nalaganje...','Duke ngarkuar...','Loading...')}</div>`;
- const form=panel.querySelector('#vehicle-fuel-form');form.addEventListener('submit',async e=>{e.preventDefault();if(!isAdmin||!currentUser)return;const date=form.elements.datum.value,litres=Number(form.elements.litri.value),km=form.elements.km.value,team=form.elements.team.value;if(!fuelDateValid(date)||!Number.isFinite(litres)||litres<=0)return alert(fuelTxt('Preverite datum in litre.','Kontrollo datën dhe litrat.','Check date and litres.'));const btn=form.querySelector('button[type=submit]');btn.disabled=true;const {error}=await supabaseClient.from('sylaj_gorivo_vnosi').insert({datum:date,litri:litres,vozilo_id:id,ekipa_id:team||null,km_stanje:km===''?null:Number(km),opomba:form.elements.note.value.trim(),created_by:currentUser.id});btn.disabled=false;if(error)return alert(error.message);form.elements.litri.value='';form.elements.km.value='';form.elements.note.value='';await vehicleFuelHistory(id);});
+ const form=panel.querySelector('#vehicle-fuel-form');form.addEventListener('submit',async e=>{e.preventDefault();if(!currentUser||(!isAdmin&&!userTeamIds.length))return;const date=form.elements.datum.value,litres=Number(form.elements.litri.value),km=form.elements.km.value,team=form.elements.team.value;if(!fuelDateValid(date)||!Number.isFinite(litres)||litres<=0)return alert(fuelTxt('Preverite datum in litre.','Kontrollo datën dhe litrat.','Check date and litres.'));const btn=form.querySelector('button[type=submit]');btn.disabled=true;const {error}=await supabaseClient.from('sylaj_gorivo_vnosi').insert({datum:date,litri:litres,vozilo_id:id,ekipa_id:isAdmin?(team||null):userTeamIds[0],km_stanje:km===''?null:Number(km),opomba:form.elements.note.value.trim(),created_by:currentUser.id});btn.disabled=false;if(error)return alert(error.message);form.elements.litri.value='';form.elements.km.value='';form.elements.note.value='';await vehicleFuelHistory(id);});
  try{await loadTeams();const select=panel.querySelector('#vehicle-fuel-team');for(const t of state.cache.teams||[]){const opt=document.createElement('option');opt.value=t.id;opt.textContent=t.naziv||t.ime||t.id;select.appendChild(opt);}}catch(e){console.warn('Teams:',e);}
  await vehicleFuelHistory(id);
 }
@@ -2807,7 +2808,7 @@ function siteGpsStart(id,mode){
 }
 function siteGpsStop(update=true){if(siteGpsWatch!==null){navigator.geolocation.clearWatch(siteGpsWatch);siteGpsWatch=null;}if(update)siteGpsUpdate('Merjenje ustavljeno');}
 async function siteGpsSave(id){
- if(!isAdmin)return alert('Shranjevanje je dovoljeno samo administratorju.');
+ if(!isAdmin&&!userTeamIds.length)return;
  if(String(id)!==String(siteGpsActiveSite))return alert('Najprej izmerite ta objekt.');
  siteGpsStop();const value=siteGpsResult();
  if(!Number.isFinite(value)||value<=0)return alert('Premalo veljavnih GPS točk za izmero.');
@@ -2820,7 +2821,7 @@ async function siteGpsSave(id){
 }
 
 function siteWorkControls(id){
- const el=document.getElementById('siteWorkActions');if(el)el.innerHTML=isAdmin?`<button class="action-btn" onclick="siteAddWork('${siteSafe(id)}')">+ Dodaj dnevno delo</button>`:'';
+ const el=document.getElementById('siteWorkActions');if(el)el.innerHTML=(isAdmin||userTeamIds.length)?`<button class="action-btn" onclick="siteAddWork('${siteSafe(id)}')">+ Dodaj dnevno delo</button>`:'';
 }
 async function siteLoadWork(id){
  siteWorkControls(id);
@@ -2835,7 +2836,7 @@ async function siteLoadWork(id){
  }catch(e){status.textContent='Dnevna dela niso povezana: '+e.message;}
 }
 async function siteAddWork(id){
- if(!isAdmin)return;
+ if(!isAdmin&&!userTeamIds.length)return;
  const date=prompt('Datum dela (LLLL-MM-DD):',new Date().toLocaleDateString('sv-SE'));if(!date)return;
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return alert('Neveljaven datum.');
  const description=prompt('Opis dela:');if(!description?.trim())return;
@@ -3118,7 +3119,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.24.7';
+  const CURRENT_VERSION = '2026.11.24.8';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3175,6 +3176,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
-<script src="./sylaj-gps-teams.js?v=2026.11.24.7"></script>
+<script src="./sylaj-gps-teams.js?v=2026.11.24.8"></script>
 </body>
 </html>

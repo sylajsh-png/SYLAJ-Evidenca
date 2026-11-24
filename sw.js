@@ -2,7 +2,7 @@
    Online-first: never cache private Supabase data.
    Version bump forces clients to take control of the new SW.
 */
-const SW_VERSION = '2026.11.24.8';
+const SW_VERSION = '2026.11.24.9';
 
 self.addEventListener('install', event => {
   self.skipWaiting();

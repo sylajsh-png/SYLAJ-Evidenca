@@ -1612,7 +1612,7 @@ async function renderCalendar(){
 function calDraw(){
  const el=document.getElementById('cal-list');if(!el)return;
  const rows=calItems.filter(x=>x.datum?.slice(0,7)===calMonth);
- el.innerHTML=rows.length?rows.map(r=>`<div style="padding:12px;margin:10px 0;border:1px solid #cbd5e1;border-radius:10px"><b>${calEsc(r.naslov)}</b> · ${calEsc(r.datum)} ${calEsc(r.ura||'')}<p>${calEsc(r.opis||'')}</p><small>${r.zasebno?'🔒 Zasebno (admin)':'👥 Skupno'} · ${calEsc(r.ponavljanje||'brez')}</small>${isAdmin?`<div><button class="action-btn" onclick="calForm('${calEsc(r.id)}')">Uredi</button> <button class="action-btn" onclick="calArchive('${calEsc(r.id)}')">Arhiviraj</button></div>`:''}</div>`).join(''):'<p>V izbranem mesecu ni opomnikov.</p>';
+ el.innerHTML=rows.length?rows.map(r=>`<div style="padding:12px;margin:10px 0;border:1px solid #cbd5e1;border-radius:10px"><b>${calEsc(r.naslov)}</b> · ${calEsc(r.datum)} ${calEsc(r.ura||'')}<p>${calEsc(r.opis||'')}</p><small>${r.zasebno?'🔒 Zasebno (admin)':'👥 Skupno'} · ${calEsc(r.ponavljanje||'brez')}</small>${isAdmin?`<div><button class="action-btn" onclick="calForm('${calEsc(r.id)}')">Uredi</button> <button class="action-btn" onclick="calArchive('${calEsc(r.id)}')">${w.aktiven?'Arhiviraj':'Aktiviraj'}</button></div>`:''}</div>`).join(''):'<p>V izbranem mesecu ni opomnikov.</p>';
 }
 function calForm(id){if(!isAdmin&&(id||!userTeamIds.length))return;const r=calItems.find(x=>String(x.id)===String(id))||{};
  document.getElementById('cal-list').innerHTML=`<div style="border:1px solid #cbd5e1;padding:14px;border-radius:10px;margin-top:14px"><h3>${id?'Uredi opomnik':'Nov opomnik'}</h3><label>Naslov <input id="cal-title" class="form-input" style="width:100%" value="${calEsc(r.naslov||'')}"></label><label>Opis <textarea id="cal-desc" class="form-input" style="width:100%">${calEsc(r.opis||'')}</textarea></label><label>Datum <input id="cal-date" type="date" class="form-input" style="width:100%" value="${calEsc(r.datum||sloveniaToday())}"></label><label>Ura <input id="cal-time" type="time" class="form-input" style="width:100%" value="${calEsc(r.ura?.slice(0,5)||'12:00')}"></label><label>Ponavljanje <select id="cal-repeat" class="form-input" style="width:100%">${[['brez','Brez'],['dnevno','Dnevno'],['tedensko','Tedensko'],['mesecno','Mesečno']].map(([v,t])=>`<option value="${v}" ${r.ponavljanje===v?'selected':''}>${t}</option>`).join('')}</select></label><label><input type="checkbox" id="cal-private" ${isAdmin?'':'disabled'} ${r.zasebno?'checked':''}> 🔒 Zasebno (samo admin)</label><p id="cal-status" style="color:#b91c1c"></p><button class="action-btn" onclick="calSave('${calEsc(id||'')}')">💾 Shrani</button> <button class="action-btn" onclick="calDraw()">Prekliči</button></div>`;
@@ -2492,7 +2492,7 @@ async function renderWorkers() {
   content.innerHTML=workerHeader(t('workers'))+`<section class="worker-panel">
     <div class="worker-toolbar"><input id="workerSearch" placeholder="🔎 Poišči delavca" oninput="filterWorkerCards()" aria-label="Poišči delavca">
     <select id="workerTeamFilter" onchange="filterWorkerCards()"><option value="">Vse ekipe</option>${options}</select></div>
-    ${isAdmin?'<button class="worker-action" onclick="workerAdd()">＋ Dodaj delavca</button>':''}
+    ${(isAdmin||userTeamIds.length)?'<button class="worker-action" onclick="workerAdd()">＋ Dodaj delavca</button>':''}
     <div id="workerCards"></div>
   </section>`;
   filterWorkerCards();
@@ -2518,7 +2518,7 @@ async function openWorkerProfile(id){
  <div class="worker-profile-section"><b>📁 Dokumenti</b><p>Dokumenti bodo na voljo po varni povezavi s podatkovno bazo.</p></div>
  <div class="worker-profile-section"><b>🧰 Orodja in oblačila</b><p>Povezava z evidenco prevzemov je v pripravi.</p></div>
  <div class="worker-profile-section"><b>📅 Odsotnosti</b><p>Podatki o odsotnostih še niso povezani.</p></div>
- </div>${isAdmin?`<div class="worker-admin-actions"><button class="worker-action" onclick="workerRename('${workerEsc(w.id)}')">✏️ Uredi ime</button><button class="worker-action" onclick="workerTransfer('${workerEsc(w.id)}')">⇄ Premesti</button><button class="worker-action danger" onclick="workerArchive('${workerEsc(w.id)}')">Arhiviraj</button></div>`:''}
+ </div>${(isAdmin||userTeamIds.some(id=>String(id)===String(w.ekipa_id)))?`<div class="worker-admin-actions"><button class="worker-action" onclick="workerRename('${workerEsc(w.id)}')">✏️ Uredi ime</button>${isAdmin?`<button class="worker-action" onclick="workerTransfer('${workerEsc(w.id)}')">⇄ Premesti</button>`:''}<button class="worker-action danger" onclick="workerArchive('${workerEsc(w.id)}')">${w.aktiven?'Arhiviraj':'Aktiviraj'}</button></div>`:''}
  </div>`;
  await workerLoadPhoto(w.id);
  try{
@@ -2625,10 +2625,10 @@ async function workerDeletePhoto(id){
  }catch(e){if(status)status.textContent='Napaka: '+e.message;}
 }
 
-async function workerAdd(){if(!isAdmin)return;const name=prompt('Ime in priimek:');if(!name?.trim())return;const choices=state.cache.teams.map((t,i)=>`${i+1}. ${t.naziv}`).join('\n');const idx=Number(prompt('Izberite ekipo (številka):\n'+choices))-1;const team=state.cache.teams[idx];if(!team)return alert('Neveljavna ekipa.');const {error}=await supabaseClient.from('delavci').insert({ime_priimek:name.trim(),ekipa_id:team.id,aktiven:true});if(error)return alert('Napaka: '+error.message);await renderWorkers();}
-async function workerRename(id){if(!isAdmin)return;const w=state.cache.workers.find(w=>String(w.id)===String(id));if(!w)return;const name=prompt('Ime in priimek:',w.ime_priimek);if(!name?.trim()||name.trim()===w.ime_priimek)return;const {error}=await supabaseClient.from('delavci').update({ime_priimek:name.trim()}).eq('id',id);if(error)return alert('Napaka: '+error.message);await renderWorkers();}
+async function workerAdd(){if(!isAdmin&&!userTeamIds.length)return;await loadTeams();const name=prompt('Ime in priimek:');if(!name?.trim())return;const choices=state.cache.teams.map((t,i)=>`${i+1}. ${t.naziv}`).join('\n');const idx=!isAdmin&&state.cache.teams.length===1?0:Number(prompt('Izberite ekipo (številka):\n'+choices))-1;const team=state.cache.teams[idx];if(!team)return alert('Neveljavna ekipa.');const {error}=await supabaseClient.from('delavci').insert({ime_priimek:name.trim(),ekipa_id:team.id,aktiven:true});if(error)return alert('Napaka: '+error.message);await renderWorkers();}
+async function workerRename(id){if(!isAdmin&&!userTeamIds.length)return;const w=state.cache.workers.find(w=>String(w.id)===String(id));if(!w)return;const name=prompt('Ime in priimek:',w.ime_priimek);if(!name?.trim()||name.trim()===w.ime_priimek)return;const {error}=await supabaseClient.from('delavci').update({ime_priimek:name.trim()}).eq('id',id);if(error)return alert('Napaka: '+error.message);await renderWorkers();}
 async function workerTransfer(id){if(!isAdmin)return;const w=state.cache.workers.find(w=>String(w.id)===String(id));if(!w)return;const choices=state.cache.teams.map((t,i)=>`${i+1}. ${t.naziv}`).join('\n');const idx=Number(prompt('Nova ekipa za '+w.ime_priimek+' (številka):\n'+choices))-1;const team=state.cache.teams[idx];if(!team||String(team.id)===String(w.ekipa_id))return; if(!confirm('Premestim delavca v '+team.naziv+'? Zgodovinskih ur ne spreminjam.'))return;const {error}=await supabaseClient.from('delavci').update({ekipa_id:team.id}).eq('id',id);if(error)return alert('Napaka: '+error.message);await renderWorkers();}
-async function workerArchive(id){if(!isAdmin)return;const w=state.cache.workers.find(w=>String(w.id)===String(id));if(!w||!confirm('Arhiviram '+w.ime_priimek+'? Delovne ure ostanejo shranjene.'))return;const {error}=await supabaseClient.from('delavci').update({aktiven:false}).eq('id',id);if(error)return alert('Napaka: '+error.message);await renderWorkers();}
+async function workerArchive(id){if(!isAdmin&&!userTeamIds.length)return;const w=state.cache.workers.find(w=>String(w.id)===String(id));if(!w||(!isAdmin&&!userTeamIds.some(id=>String(id)===String(w.ekipa_id)))||!confirm((w.aktiven?'Arhiviram ':'Aktiviram ')+w.ime_priimek+'? Delovne ure ostanejo shranjene.'))return;const {error}=await supabaseClient.from('delavci').update({aktiven:!w.aktiven}).eq('id',id);if(error)return alert('Napaka: '+error.message);await renderWorkers();}
 
 // Gradbišča: uporabljamo obstoječi tabeli gradbisca in delovne_ure.
 // Ne ustvarjamo navideznih fotografij ali dnevnih poročil.
@@ -3119,7 +3119,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.24.8';
+  const CURRENT_VERSION = '2026.11.24.9';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3176,6 +3176,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
-<script src="./sylaj-gps-teams.js?v=2026.11.24.8"></script>
+<script src="./sylaj-gps-teams.js?v=2026.11.24.9"></script>
 </body>
 </html>

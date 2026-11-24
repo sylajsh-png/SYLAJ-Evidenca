@@ -702,8 +702,8 @@ body{background:#eaf2fa}
             <option value="sq">🇦🇱 SQ</option>
             <option value="en">🇬🇧 EN</option>
           </select>
-          <button id="settings-btn" class="icon-btn"><i class="fas fa-cog"></i></button>
-          <button id="notif-btn" class="icon-btn">
+          <button id="settings-btn" type="button" class="icon-btn" onclick="sylajOpenSettings()"><i class="fas fa-cog"></i></button>
+          <button id="notif-btn" type="button" class="icon-btn" onclick="sylajOpenNotifications()">
             <i class="fas fa-bell"></i>
             <span class="badge hidden" id="notif-badge">0</span>
           </button>
@@ -3095,7 +3095,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.23.1';
+  const CURRENT_VERSION = '2026.11.24.3';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3128,6 +3128,29 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});
   setInterval(checkUpdate, 5*60*1000);
 })();
+</script>
+<script>
+// Direct, global actions for the two header buttons; no DOM-ready listener dependency.
+window.sylajOpenSettings = function () {
+  try {
+    if (typeof navigate !== 'function') throw new Error('navigate unavailable');
+    navigate('profile');
+    const banner = document.getElementById('home-banner');
+    if (banner) banner.style.display = 'none';
+  } catch (error) {
+    console.error('SYLAJ settings:', error);
+    alert('Nastavitve ni mogoče odpreti. Poskusite osvežiti stran.');
+  }
+};
+window.sylajOpenNotifications = function () {
+  try {
+    if (typeof navigate !== 'function') throw new Error('navigate unavailable');
+    navigate('calendar');
+  } catch (error) {
+    console.error('SYLAJ notifications:', error);
+    alert('Obvestil ni mogoče odpreti. Poskusite osvežiti stran.');
+  }
+};
 </script>
 </body>
 </html>

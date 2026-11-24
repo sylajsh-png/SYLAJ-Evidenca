@@ -915,6 +915,7 @@ async function doLogin(email, password) {
 }
 
 async function doLogout() {
+  if (window.__sylajGpsLogout && !(await window.__sylajGpsLogout())) return;
   await supabaseClient.auth.signOut();
 }
 
@@ -1680,6 +1681,10 @@ function navigate(page) {
     else if (page === 'calendar') renderCalendar();
     else if (page === 'profile') renderProfile();
     else if (page === 'reports' || page === 'reportsMod') renderReports();
+    else if (page === 'gpsTeams') {
+      if (typeof window.renderGpsTeams === 'function') window.renderGpsTeams();
+      else content.innerHTML = `<div class="empty-state"><p>GPS modul se nalaga… Osvežite stran.</p></div>`;
+    }
     else content.innerHTML = `<div class="empty-state"><p>${t('noData')} – modul v pripravi</p></div>`;
   }
 }
@@ -1703,6 +1708,15 @@ async function renderHome() {
     { id: 'docs', icon: '📁', title: t('docs'), desc: t('docsDesc') },
     { id: 'calendar', icon: '📅', title: t('calendar'), desc: t('calendarDesc') }
   ];
+  // GPS map for admin, sharing for leaders
+  if (isAdmin || currentProfile?.vloga === 'vodja') {
+    modules.push({
+      id: 'gpsTeams',
+      icon: '📍',
+      title: isAdmin ? 'Lokacija ekip' : 'GPS – moja lokacija',
+      desc: isAdmin ? 'GPS mapa, Fitimi & Lumi, zgodovina premikov' : 'Začni / ustavi deljenje lokacije'
+    });
+  }
   let html = `<div class="module-grid">`;
   modules.forEach(m => {
     html += `<div class="module-card" onclick="navigate('${m.id}')"><span class="icon">${m.icon}</span><div class="title">${m.title}</div><div class="desc">${m.desc}</div><span class="arrow">›</span></div>`;
@@ -3095,7 +3109,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.24.3';
+  const CURRENT_VERSION = '2026.11.24.5';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3152,5 +3166,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
+<script src="./sylaj-gps-teams.js?v=2026.11.24.5"></script>
 </body>
 </html>

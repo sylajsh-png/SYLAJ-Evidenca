@@ -925,7 +925,8 @@ async function loadTeams() {
   return state.cache.teams;
 }
 
-async function loadWorkers() {
+async function loadWorkers(allForHours = false) {
+  if (allForHours) { const {data,error}=await supabaseClient.rpc('sylaj_hours_workers'); if(error) throw error; state.cache.workers=data||[]; return state.cache.workers; }
   let q = supabaseClient.from('delavci').select('id, ime_priimek, ekipa_id, aktiven').is('izbrisano_at', null).order('ime_priimek');
   if (!isAdmin && !userTeamIds.length) { state.cache.hours=[]; return []; }
   if (!isAdmin) q = q.in('ekipa_id', userTeamIds);
@@ -1014,8 +1015,8 @@ async function saveHourRecord(record, id = null) {
       return false;
     }
     if (!userTeamIds.some(teamId => String(teamId) === String(payload.ekipa_id)) ||
-        !state.cache.workers.some(w => String(w.id) === String(payload.delavec_id) && String(w.ekipa_id) === String(payload.ekipa_id))) {
-      alert('Ure lahko vnašate samo za delavce svoje ekipe.');
+        !state.cache.workers.some(w => String(w.id) === String(payload.delavec_id) && (w.aktiven || id))) {
+      alert('Izberite registriranega delavca in svojo ekipo.');
       return false;
     }
     const today = sloveniaToday();
@@ -2255,7 +2256,7 @@ async function depotConfirm(id){
 async function renderHours() {
   const content = document.getElementById('content');
   content.innerHTML = `<div class="empty-state"><p>${t('loading')}</p></div>`;
-  await Promise.all([loadTeams(), loadWorkers(), loadSites()]);
+  try { await Promise.all([loadTeams(), loadWorkers(true), loadSites()]); } catch(e) { content.textContent="Napaka: "+e.message; return; }
   const hours = await loadHours(state.hoursFilter);
   const f = state.hoursFilter;
   let totalAll = 0;
@@ -2414,7 +2415,7 @@ function openHoursModal(id = null) {
     <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button></div>
     <div class="form-row">
       <div class="form-group"><label>${t('date')}</label><input type="date" id="m-date" value="${rec?.datum || sloveniaToday()}" ${!isAdmin ? `min="${sloveniaToday()}" max="${sloveniaToday()}"` : ''} /></div>
-      <div class="form-group"><label>${t('worker')}</label><select id="m-worker">${state.cache.workers.map(w => `<option value="${w.id}" ${rec?.delavec_id==w.id?'selected':''}>${w.ime_priimek}</option>`).join('')}</select></div>
+      <div class="form-group"><label>${t('worker')}</label><select id="m-worker"><option value="">—</option>${state.cache.workers.filter(w=>w.aktiven||rec?.delavec_id==w.id).map(w => `<option value="${w.id}" ${rec?.delavec_id==w.id?'selected':''}>${workerEsc(w.ime_priimek)}</option>`).join('')}</select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>${t('site')}</label><select id="m-site"><option value="">—</option>${state.cache.sites.filter(s=>isAdmin||siteIsActive(s.id)||rec?.gradbisce_id==s.id).map(s => `<option value="${s.id}" ${(rec?rec.gradbisce_id==s.id:!isAdmin&&siteIsActive(s.id))?'selected':''}>${siteSafe(s.naziv)}</option>`).join('')}</select></div>
@@ -2448,6 +2449,7 @@ async function saveHour(id) {
     malica_konec: document.getElementById('m-lunch-end').value || null,
     opomba: document.getElementById('m-note').value
   };
+  if (!record.delavec_id || !record.ekipa_id || !record.gradbisce_id || !record.datum || !record.zacetek || !record.konec) return alert("Izberite delavca, ekipo, gradbišče, datum in ure.");
   const ok = await saveHourRecord(record, id === 'null' ? null : id);
   if (ok) { document.querySelector('.modal-overlay')?.remove(); renderHours(); }
 }
@@ -3119,7 +3121,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.24.9';
+  const CURRENT_VERSION = '2026.11.25.1';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3176,6 +3178,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
-<script src="./sylaj-gps-teams.js?v=2026.11.24.9"></script>
+<script src="./sylaj-gps-teams.js?v=2026.11.25.1"></script>
 </body>
 </html>

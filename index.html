@@ -920,7 +920,11 @@ async function doLogout() {
 }
 
 async function loadTeams() {
-  const { data } = await supabaseClient.from('ekipe').select('id, naziv, vodja_id, aktivno_gradbisce_id');
+  const { data, error } = await supabaseClient.from('ekipe').select('id, naziv, vodja_id');
+  if(error) throw error;
+  const {data: active, error: activeError} = await supabaseClient.from('aktivna_gradbisca').select('ekipa_id,gradbisce_id');
+  if(activeError) throw activeError;
+  for(const team of data || []) team.aktivno_gradbisce_id = (active || []).find(a=>String(a.ekipa_id)===String(team.id))?.gradbisce_id ?? null;
   state.cache.teams = (data || []).filter(t=>isAdmin||userTeamIds.some(id=>String(id)===String(t.id)));
   return state.cache.teams;
 }
@@ -1009,6 +1013,7 @@ async function saveHourRecord(record, id = null) {
   };
 
   if (!isAdmin) {
+    try { await loadTeams(); } catch(e) { alert(e.message); return false; }
     if(!payload.gradbisce_id || !state.cache.sites.some(s=>String(s.id)===String(payload.gradbisce_id)&&(state.cache.teams.some(t=>String(t.id)===String(payload.ekipa_id)&&String(t.aktivno_gradbisce_id)===String(s.id))||id&&state.cache.hours.some(h=>String(h.id)===String(id)&&String(h.gradbisce_id)===String(s.id))))){alert('Izberite aktivno gradbišče svoje ekipe.');return false;}
     if (!String(payload.opomba || '').trim()) {
       alert('Opis opravljenega dela je obvezen. Brez opisa ur ni mogoče shraniti.');
@@ -2659,10 +2664,10 @@ async function siteAdd(){
  await loadTeams(); const teams=state.cache.teams.filter(t=>isAdmin||userTeamIds.some(x=>String(x)===String(t.id))); const team=teams.length===1?teams[0]:teams[Number(prompt(teams.map((t,i)=>`${i+1}. ${t.naziv}`).join('\n')))-1]; if(!team)return;
  const {data,error}=await supabaseClient.from('gradbisca').insert({naziv:name.trim(),naslov:address.trim(),created_by:currentUser.id,ekipa_id:team.id}).select('id').single();
  if(error)return alert('Gradbišča ni bilo mogoče dodati: '+error.message);
- if(data?.id!=null){const {error:activationError}=await supabaseClient.rpc('sylaj_aktiviraj_gradbisce',{p_ekipa_id:team.id,p_gradbisce_id:data.id});if(activationError)alert(activationError.message);} await renderSites();if(data?.id!=null)await siteOpen(data.id);
+ if(data?.id!=null){const {error:activationError}=await supabaseClient.from('aktivna_gradbisca').upsert({ekipa_id:team.id,gradbisce_id:data.id,posodobljeno:new Date().toISOString()},{onConflict:'ekipa_id'});if(activationError)alert(activationError.message);} await renderSites();if(data?.id!=null)await siteOpen(data.id);
 }
 function siteIsActive(id){return state.cache.teams.some(t=>String(t.aktivno_gradbisce_id)===String(id));}
-async function siteSetActive(id,teamId,active){const {error}=await supabaseClient.rpc('sylaj_aktiviraj_gradbisce',{p_ekipa_id:Number(teamId),p_gradbisce_id:active?Number(id):null});if(error)return alert(error.message);await loadTeams();await siteOpen(id);}
+async function siteSetActive(id,teamId,active){const {error}=await (active ? supabaseClient.from('aktivna_gradbisca').upsert({ekipa_id:teamId,gradbisce_id:id,posodobljeno:new Date().toISOString()},{onConflict:'ekipa_id'}) : supabaseClient.from('aktivna_gradbisca').delete().eq('ekipa_id',teamId).eq('gradbisce_id',id).select('ekipa_id').single());if(error)return alert(error.message);await loadTeams();await siteOpen(id);}
 
 async function siteEdit(id){
  if(!isAdmin)return;const site=state.cache.sites.find(s=>String(s.id)===String(id));if(!site)return;
@@ -3121,7 +3126,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") { window.add
 <script>
 // SYLAJ auto-update: checks the published GitHub Pages version while online.
 (() => {
-  const CURRENT_VERSION = '2026.11.25.1';
+  const CURRENT_VERSION = '2026.11.26.1';
   let offered = false;
   async function checkUpdate() {
     if (offered || !navigator.onLine || location.protocol !== 'https:') return;
@@ -3178,6 +3183,6 @@ window.sylajOpenNotifications = function () {
   }
 };
 </script>
-<script src="./sylaj-gps-teams.js?v=2026.11.25.1"></script>
+<script src="./sylaj-gps-teams.js?v=2026.11.26.1"></script>
 </body>
 </html>
